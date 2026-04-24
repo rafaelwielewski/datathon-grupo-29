@@ -125,6 +125,7 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
     print(f'Train: {X_train.shape} | Val: {X_val.shape} | Test: {X_test.shape}')
 
     # 6. MLflow run
+    mlflow.set_tracking_uri('sqlite:///mlflow.db')
     mlflow.set_experiment('datathon-grupo-29')
     with mlflow.start_run():
         mlflow.log_params({

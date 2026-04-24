@@ -67,7 +67,7 @@ docker-serve:
 
 # Open MLflow UI locally
 mlflow-ui:
-	@mlflow ui --backend-store-uri sqlite:///mlruns.db --port 5000
+	@mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000
 
 # Remove cache and build artifacts
 clean:
