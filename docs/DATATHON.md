@@ -882,14 +882,14 @@ Use este checklist como guia antes do Demo Day:
 - [x] EDA documentada com insights relevantes para o problema da empresa
 - [x] Baseline treinado e métricas reportadas no MLflow
 - [x] Pipeline versionado (DVC + Docker) e reprodutível
-- [ ] Métricas de negócio mapeadas para métricas técnicas
-- [ ] `pyproject.toml` com todas as dependências
+- [x] Métricas de negócio mapeadas para métricas técnicas
+- [x] `pyproject.toml` com todas as dependências
 
 ### Etapa 2 — LLM + Agente
 - [ ] LLM servido via API com quantização aplicada
 - [ ] Agente ReAct funcional com ≥ 3 tools relevantes ao domínio
 - [ ] RAG retornando contexto relevante dos dados fornecidos
-- [ ] CI/CD pipeline funcional (GitHub Actions)
+- [x] CI/CD pipeline funcional (GitHub Actions)
 - [ ] Benchmark documentado com ≥ 3 configurações
 
 ### Etapa 3 — Avaliação + Observabilidade
