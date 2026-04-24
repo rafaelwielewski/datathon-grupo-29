@@ -1,0 +1,15 @@
+stages:
+  train:
+    cmd: python src/models/train.py
+    deps:
+      - src/models/train.py
+      - src/models/baseline.py
+      - src/features/feature_engineering.py
+      - configs/model_config.yaml
+    outs:
+      - data/processed/artifacts/final_model.keras
+      - data/processed/artifacts/final_model.onnx
+      - data/processed/artifacts/scaler_X.joblib
+      - data/processed/artifacts/scaler_y.joblib
+      - data/processed/artifacts/metadata.json
+      - data/processed/artifacts/metrics.json

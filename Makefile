@@ -1,4 +1,5 @@
-.PHONY: install setup train test lint format type-check security pre-commit serve clean
+.PHONY: install setup train test lint format type-check security pre-commit serve clean \
+        dvc-train docker-build docker-train docker-serve mlflow-ui
 
 # First project setup - install dependencies and create folder structure
 setup: install
@@ -46,6 +47,27 @@ test:
 # Run tests fast - stop at first failure
 test-fast:
 	@pytest tests/ -x -q
+
+# Run training pipeline via DVC (reprodutível)
+dvc-train:
+	@dvc repro
+
+# Build Docker images
+docker-build:
+	@docker build -f Dockerfile.train -t datathon-train:latest .
+	@docker build -f src/serving/Dockerfile -t datathon-serve:latest .
+
+# Run training inside Docker
+docker-train:
+	@docker compose --profile train up --build train
+
+# Run serving stack (API + MLflow UI) via Docker Compose
+docker-serve:
+	@docker compose --profile serve up --build
+
+# Open MLflow UI locally
+mlflow-ui:
+	@mlflow ui --backend-store-uri sqlite:///mlruns.db --port 5000
 
 # Remove cache and build artifacts
 clean:

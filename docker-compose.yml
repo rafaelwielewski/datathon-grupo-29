@@ -1,0 +1,38 @@
+services:
+  train:
+    build:
+      context: .
+      dockerfile: Dockerfile.train
+    volumes:
+      - ./data:/app/data
+      - ./configs:/app/configs
+      - ./mlruns:/app/mlruns
+    env_file: .env
+    profiles: [train]
+
+  serve:
+    build:
+      context: .
+      dockerfile: src/serving/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/processed/artifacts:/app/data/processed/artifacts
+    env_file: .env
+    depends_on:
+      - mlflow
+    profiles: [serve]
+
+  mlflow:
+    image: python:3.11-slim
+    command: >
+      sh -c "pip install mlflow -q &&
+             mlflow server
+             --host 0.0.0.0
+             --port 5000
+             --backend-store-uri sqlite:///mlruns.db
+             --default-artifact-root /mlruns"
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlruns
