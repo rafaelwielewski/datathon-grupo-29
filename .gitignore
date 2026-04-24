@@ -18,6 +18,8 @@ data/raw/
 *.keras
 *.onnx
 *.joblib
+data/processed/artifacts/metadata.json
+data/processed/artifacts/metrics.json
 
 # MLflow
 mlruns/
