@@ -879,8 +879,8 @@ jobs:
 Use este checklist como guia antes do Demo Day:
 
 ### Etapa 1 — Dados + Baseline
-- [ ] EDA documentada com insights relevantes para o problema da empresa
-- [ ] Baseline treinado e métricas reportadas no MLflow
+- [x] EDA documentada com insights relevantes para o problema da empresa
+- [x] Baseline treinado e métricas reportadas no MLflow
 - [ ] Pipeline versionado (DVC + Docker) e reprodutível
 - [ ] Métricas de negócio mapeadas para métricas técnicas
 - [ ] `pyproject.toml` com todas as dependências
