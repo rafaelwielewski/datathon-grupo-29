@@ -1,0 +1,46 @@
+schema: '2.0'
+stages:
+  train:
+    cmd: python src/models/train.py
+    deps:
+    - path: configs/model_config.yaml
+      hash: md5
+      md5: 71e73343a1d430ef8e4956cb0c617d28
+      size: 548
+    - path: src/features/feature_engineering.py
+      hash: md5
+      md5: cabd6e4a76cf34c500e6941bc0909023
+      size: 3088
+    - path: src/models/baseline.py
+      hash: md5
+      md5: 01c49dddeb3c243bf2dae555020e0e2a
+      size: 3420
+    - path: src/models/train.py
+      hash: md5
+      md5: 5886e581554073d39df586b35be809fd
+      size: 9393
+    outs:
+    - path: data/processed/artifacts/final_model.keras
+      hash: md5
+      md5: 73cf2153028f96732270b55093107924
+      size: 446403
+    - path: data/processed/artifacts/final_model.onnx
+      hash: md5
+      md5: 4627ebde95cc3e44203b1faaa488afaa
+      size: 163139
+    - path: data/processed/artifacts/metadata.json
+      hash: md5
+      md5: f53e2d2b18feadae277f9622f31b7fa1
+      size: 540
+    - path: data/processed/artifacts/metrics.json
+      hash: md5
+      md5: 764583cc415bddb548e3ee5aac2ac37f
+      size: 478
+    - path: data/processed/artifacts/scaler_X.joblib
+      hash: md5
+      md5: 1e6c4929bf02802670f9e4fe292b148d
+      size: 759
+    - path: data/processed/artifacts/scaler_y.joblib
+      hash: md5
+      md5: bb1bc56bd7bdcc3299927972fe33a256
+      size: 511
