@@ -12,9 +12,9 @@ os.environ.setdefault('CUDA_VISIBLE_DEVICES', '')
 
 import joblib
 import mlflow
-import pandas as pd
 import mlflow.tensorflow
 import numpy as np
+import pandas as pd
 import yaml
 import yfinance as yf
 from sklearn.metrics import mean_absolute_error, mean_squared_error
