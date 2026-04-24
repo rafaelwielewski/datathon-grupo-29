@@ -1,0 +1,34 @@
+data:
+  symbol: "AAPL"
+  start_date: "2018-01-01"
+  end_date: "2026-01-01"
+
+splits:
+  val_ratio: 0.15
+  test_ratio: 0.15
+
+model:
+  lookback: 60
+  horizon: 5
+  lstm_units: [64, 32]
+  dense_units: 16
+  dropout: 0.2
+  recurrent_dropout: 0.05
+
+training:
+  epochs: 120
+  batch_size: 32
+  learning_rate: 0.0005
+  clipnorm: 1.0
+  huber_delta: 1.0
+  seed: 42
+
+callbacks:
+  early_stopping_patience: 15
+  reduce_lr_factor: 0.5
+  reduce_lr_patience: 4
+  reduce_lr_min: 0.000001
+
+paths:
+  artifacts_dir: "data/processed/artifacts"
+  data_dir: "data/processed"

@@ -1,0 +1,64 @@
+[project]
+name = "datathon-grupo-29"
+version = "0.1.0"
+description = "Datathon FIAP - Grupo 29: previsão de preços com LSTM"
+requires-python = ">=3.11"
+dependencies = [
+    "tensorflow>=2.16.0",
+    "onnxruntime>=1.20.0",
+    "scikit-learn>=1.4.0",
+    "pandas>=2.3.1",
+    "numpy>=1.26.4",
+    "yfinance>=0.2.37",
+    "joblib>=1.5.3",
+    "fastapi>=0.116.1",
+    "uvicorn[standard]>=0.35.0",
+    "pydantic>=2.11.7",
+    "python-dotenv>=1.1.1",
+    "mlflow>=2.14.0",
+    "matplotlib>=3.8.0",
+    "plotly>=5.18.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.4.1",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.7",
+    "mypy>=1.10.0",
+    "bandit>=1.7.0",
+    "tf2onnx>=1.16.1",
+    "pre-commit>=4.2.0",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.ruff]
+line-length = 140
+indent-width = 4
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+
+[tool.bandit]
+skips = ["B101"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --cov=src --cov-report=term-missing"

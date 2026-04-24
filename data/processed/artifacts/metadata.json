@@ -1,0 +1,32 @@
+{
+  "symbol": "AAPL",
+  "start_date": "2018-01-01",
+  "end_date": "2026-01-01",
+  "lookback": 60,
+  "horizon_days": 5,
+  "features": [
+    "close",
+    "high",
+    "low",
+    "open",
+    "volume",
+    "ret_1",
+    "log_ret_1",
+    "sma_7",
+    "sma_21",
+    "ema_12",
+    "ema_26",
+    "macd",
+    "macd_signal",
+    "rsi_14",
+    "vol_7",
+    "vol_21"
+  ],
+  "target": "delta_close = close_(t+5) - close_t",
+  "trained_at": "2026-04-24T19:02:22.397355",
+  "splits": {
+    "train_rows": 1332,
+    "val_rows": 297,
+    "test_rows": 297
+  }
+}
