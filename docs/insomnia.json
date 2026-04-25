@@ -1,0 +1,156 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-04-25",
+  "__export_source": "datathon-grupo-29",
+  "resources": [
+    {
+      "_id": "wrk_datathon",
+      "_type": "workspace",
+      "name": "Datathon Grupo 29 — AAPL Financial Assistant",
+      "description": "API do agente ReAct para análise de ações AAPL com previsão LSTM D+5"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "parentId": "wrk_datathon",
+      "name": "Local",
+      "data": {
+        "base_url": "http://localhost:8000"
+      }
+    },
+    {
+      "_id": "fld_health",
+      "_type": "request_group",
+      "parentId": "wrk_datathon",
+      "name": "Health"
+    },
+    {
+      "_id": "req_health",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "GET /health",
+      "method": "GET",
+      "url": "{{ _.base_url }}/health",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_id": "fld_query",
+      "_type": "request_group",
+      "parentId": "wrk_datathon",
+      "name": "Query — Agente ReAct"
+    },
+    {
+      "_id": "req_predict",
+      "_type": "request",
+      "parentId": "fld_query",
+      "name": "Previsão D+5",
+      "method": "POST",
+      "url": "{{ _.base_url }}/query",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"question\": \"What is the AAPL price prediction for the next 5 days?\"\n}"
+      }
+    },
+    {
+      "_id": "req_indicators",
+      "_type": "request",
+      "parentId": "fld_query",
+      "name": "Indicadores Técnicos",
+      "method": "POST",
+      "url": "{{ _.base_url }}/query",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"question\": \"What are the current technical indicators for AAPL? Is the RSI overbought or oversold?\"\n}"
+      }
+    },
+    {
+      "_id": "req_risk_small",
+      "_type": "request",
+      "parentId": "fld_query",
+      "name": "Risco de Posição — 100 ações",
+      "method": "POST",
+      "url": "{{ _.base_url }}/query",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"question\": \"What is the risk of holding 100 AAPL shares? What is the expected error and VaR?\"\n}"
+      }
+    },
+    {
+      "_id": "req_risk_large",
+      "_type": "request",
+      "parentId": "fld_query",
+      "name": "Risco de Posição — 1000 ações (alto risco)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/query",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"question\": \"I want to buy 1000 AAPL shares. What is the risk level and do I need human approval?\"\n}"
+      }
+    },
+    {
+      "_id": "req_combined",
+      "_type": "request",
+      "parentId": "fld_query",
+      "name": "Análise Completa",
+      "method": "POST",
+      "url": "{{ _.base_url }}/query",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"question\": \"Based on the current technical indicators and the D+5 prediction, should I buy or sell AAPL? What position size is appropriate?\"\n}"
+      }
+    },
+    {
+      "_id": "fld_validation",
+      "_type": "request_group",
+      "parentId": "wrk_datathon",
+      "name": "Validação — Casos de Erro"
+    },
+    {
+      "_id": "req_empty",
+      "_type": "request",
+      "parentId": "fld_validation",
+      "name": "Pergunta vazia (422)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/query",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"question\": \"\"\n}"
+      }
+    },
+    {
+      "_id": "req_missing",
+      "_type": "request",
+      "parentId": "fld_validation",
+      "name": "Campo ausente (422)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/query",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{}"
+      }
+    }
+  ]
+}
