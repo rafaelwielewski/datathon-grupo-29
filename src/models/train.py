@@ -73,6 +73,7 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
     Path(paths_cfg['data_dir']).mkdir(parents=True, exist_ok=True)
 
     import tensorflow as tf
+
     tf.random.set_seed(train_cfg['seed'])
     np.random.seed(train_cfg['seed'])
 
@@ -90,28 +91,28 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
     dates = feats.index
 
     # 3. Temporal split
-    train_end, val_end = temporal_split(
-        pd.DatetimeIndex(dates), split_cfg['val_ratio'], split_cfg['test_ratio']
-    )
+    train_end, val_end = temporal_split(pd.DatetimeIndex(dates), split_cfg['val_ratio'], split_cfg['test_ratio'])
     n_train = (dates <= train_end).sum()
 
     # 4. Scale (fit only on train)
     scaler_X = RobustScaler()
     scaler_y = RobustScaler()
-    X_scaled = np.vstack([
-        scaler_X.fit_transform(X_raw[:n_train]),
-        scaler_X.transform(X_raw[n_train:]),
-    ])
-    y_scaled = np.vstack([
-        scaler_y.fit_transform(y_raw[:n_train]),
-        scaler_y.transform(y_raw[n_train:]),
-    ])
+    X_scaled = np.vstack(
+        [
+            scaler_X.fit_transform(X_raw[:n_train]),
+            scaler_X.transform(X_raw[n_train:]),
+        ]
+    )
+    y_scaled = np.vstack(
+        [
+            scaler_y.fit_transform(y_raw[:n_train]),
+            scaler_y.transform(y_raw[n_train:]),
+        ]
+    )
 
     # 5. Sequences
     lookback = model_cfg['lookback']
-    Xw, yw, ct_w, cth_w, dt_w = create_sequences(
-        X_scaled, y_scaled, close_t_raw, close_th_raw, dates.values, lookback
-    )
+    Xw, yw, ct_w, cth_w, dt_w = create_sequences(X_scaled, y_scaled, close_t_raw, close_th_raw, dates.values, lookback)
     train_m = dt_w <= train_end
     val_m = (dt_w > train_end) & (dt_w <= val_end)
     test_m = dt_w > val_end
@@ -128,14 +129,16 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
     mlflow.set_tracking_uri('sqlite:///mlflow.db')
     mlflow.set_experiment('datathon-grupo-29')
     with mlflow.start_run():
-        mlflow.log_params({
-            'symbol': symbol,
-            'lookback': lookback,
-            'horizon': model_cfg['horizon'],
-            'epochs': train_cfg['epochs'],
-            'batch_size': train_cfg['batch_size'],
-            'learning_rate': train_cfg['learning_rate'],
-        })
+        mlflow.log_params(
+            {
+                'symbol': symbol,
+                'lookback': lookback,
+                'horizon': model_cfg['horizon'],
+                'epochs': train_cfg['epochs'],
+                'batch_size': train_cfg['batch_size'],
+                'learning_rate': train_cfg['learning_rate'],
+            }
+        )
 
         model = build_lstm_model(
             lookback=lookback,
@@ -151,22 +154,19 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
         model.summary()
 
         callbacks = [
-            keras.callbacks.EarlyStopping(
-                monitor='val_loss', patience=cb_cfg['early_stopping_patience'], restore_best_weights=True
-            ),
+            keras.callbacks.EarlyStopping(monitor='val_loss', patience=cb_cfg['early_stopping_patience'], restore_best_weights=True),
             keras.callbacks.ReduceLROnPlateau(
                 monitor='val_loss',
                 factor=cb_cfg['reduce_lr_factor'],
                 patience=cb_cfg['reduce_lr_patience'],
                 min_lr=cb_cfg['reduce_lr_min'],
             ),
-            keras.callbacks.ModelCheckpoint(
-                str(artifacts_dir / 'best_model.keras'), monitor='val_loss', save_best_only=True
-            ),
+            keras.callbacks.ModelCheckpoint(str(artifacts_dir / 'best_model.keras'), monitor='val_loss', save_best_only=True),
         ]
 
         history = model.fit(
-            X_train, y_train,
+            X_train,
+            y_train,
             validation_data=(X_val, y_val),
             epochs=train_cfg['epochs'],
             batch_size=train_cfg['batch_size'],
@@ -189,10 +189,14 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
         print(f'\n=== LSTM D+{horizon} ===')
         print(f'MAE: {mae:.4f} | RMSE: {rmse:.4f} | MAPE: {mape:.2f}% | DirAcc: {dir_acc:.2f}%')
 
-        mlflow.log_metrics({
-            'test_mae': mae, 'test_rmse': rmse,
-            'test_mape': mape, 'test_dir_accuracy': dir_acc,
-        })
+        mlflow.log_metrics(
+            {
+                'test_mae': mae,
+                'test_rmse': rmse,
+                'test_mape': mape,
+                'test_dir_accuracy': dir_acc,
+            }
+        )
 
         # 8. Baselines
         naive = NaiveBaseline().fit(X_train, y_train)
@@ -229,8 +233,10 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
         }
         metrics_out = {
             'model': {
-                'mae_price': mae, 'rmse_price': rmse,
-                'mape_price_pct': mape, 'directional_accuracy_pct': dir_acc,
+                'mae_price': mae,
+                'rmse_price': rmse,
+                'mape_price_pct': mape,
+                'directional_accuracy_pct': dir_acc,
             },
             'baselines': {
                 'naive': naive_m,
@@ -255,8 +261,15 @@ def _export_onnx(model, artifacts_dir: Path) -> None:
     onnx_path = str(artifacts_dir / 'final_model.onnx')
     try:
         model.export(saved_model_dir)
-        cmd = f'python -m tf2onnx.convert --saved-model {saved_model_dir} --output {onnx_path} --opset 13'
-        if os.system(cmd) == 0:
+        import subprocess
+        import sys
+
+        result = subprocess.run(
+            [sys.executable, '-m', 'tf2onnx.convert', '--saved-model', saved_model_dir, '--output', onnx_path, '--opset', '13'],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
             print(f'ONNX model saved: {onnx_path}')
         else:
             print('ONNX conversion failed — Keras model still available.')

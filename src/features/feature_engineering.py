@@ -4,12 +4,22 @@ import numpy as np
 import pandas as pd
 
 FEATURE_COLS = [
-    'close', 'high', 'low', 'open', 'volume',
-    'ret_1', 'log_ret_1',
-    'sma_7', 'sma_21', 'ema_12', 'ema_26',
-    'macd', 'macd_signal',
+    'close',
+    'high',
+    'low',
+    'open',
+    'volume',
+    'ret_1',
+    'log_ret_1',
+    'sma_7',
+    'sma_21',
+    'ema_12',
+    'ema_26',
+    'macd',
+    'macd_signal',
     'rsi_14',
-    'vol_7', 'vol_21',
+    'vol_7',
+    'vol_21',
 ]
 
 HORIZON = 5
@@ -32,13 +42,15 @@ def rsi(series: pd.Series, period: int = 14) -> pd.Series:
 
 def build_features(df: pd.DataFrame, horizon: int = HORIZON) -> pd.DataFrame:
     close = _to_series(df['Close']).astype(float)
-    feats = pd.DataFrame({
-        'close': close,
-        'high': _to_series(df['High']).astype(float),
-        'low': _to_series(df['Low']).astype(float),
-        'open': _to_series(df['Open']).astype(float),
-        'volume': _to_series(df['Volume']).astype(float),
-    })
+    feats = pd.DataFrame(
+        {
+            'close': close,
+            'high': _to_series(df['High']).astype(float),
+            'low': _to_series(df['Low']).astype(float),
+            'open': _to_series(df['Open']).astype(float),
+            'volume': _to_series(df['Volume']).astype(float),
+        }
+    )
 
     feats['ret_1'] = feats['close'].pct_change()
     feats['log_ret_1'] = np.log(feats['close']).diff()

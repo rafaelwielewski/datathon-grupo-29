@@ -28,6 +28,7 @@ class QueryResponse(BaseModel):
 def _get_agent():
     """Inicializa o agente uma única vez (singleton por processo)."""
     from src.agent.react_agent import build_agent_executor
+
     return build_agent_executor()
 
 
@@ -41,6 +42,7 @@ def health() -> dict:
 def query(request: QueryRequest) -> QueryResponse:
     """Processa uma pergunta sobre AAPL usando o agente ReAct."""
     from src.agent.react_agent import invoke_agent
+
     agent = _get_agent()
     result = invoke_agent(agent, request.question)
     return QueryResponse(

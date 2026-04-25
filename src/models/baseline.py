@@ -44,6 +44,7 @@ class SMABaseline:
 
     def predict(self, close_series: np.ndarray) -> np.ndarray:
         import pandas as pd
+
         s = pd.Series(close_series.reshape(-1))
         return s.rolling(self.window).mean().values.reshape(-1, 1)
 
@@ -56,9 +57,7 @@ class SMABaseline:
         pred = self.predict(close_series)
         mask = ~np.isnan(pred.reshape(-1))
         m = _metrics(true_price.reshape(-1)[mask], pred.reshape(-1)[mask])
-        m['directional_accuracy'] = directional_accuracy(
-            true_price[mask], pred.reshape(-1, 1)[mask], close_t[mask]
-        )
+        m['directional_accuracy'] = directional_accuracy(true_price[mask], pred.reshape(-1, 1)[mask], close_t[mask])
         return m
 
 
@@ -75,6 +74,7 @@ def build_lstm_model(
 ):
     """Constrói o modelo LSTM de 2 camadas usado no datathon."""
     import os
+
     os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '2')
 
     from tensorflow import keras
@@ -83,15 +83,17 @@ def build_lstm_model(
     if lstm_units is None:
         lstm_units = [64, 32]
 
-    model = keras.Sequential([
-        layers.Input(shape=(lookback, n_features)),
-        layers.LSTM(lstm_units[0], return_sequences=True, recurrent_dropout=recurrent_dropout),
-        layers.Dropout(dropout),
-        layers.LSTM(lstm_units[1], recurrent_dropout=recurrent_dropout),
-        layers.Dropout(dropout),
-        layers.Dense(dense_units, activation='relu'),
-        layers.Dense(1),
-    ])
+    model = keras.Sequential(
+        [
+            layers.Input(shape=(lookback, n_features)),
+            layers.LSTM(lstm_units[0], return_sequences=True, recurrent_dropout=recurrent_dropout),
+            layers.Dropout(dropout),
+            layers.LSTM(lstm_units[1], recurrent_dropout=recurrent_dropout),
+            layers.Dropout(dropout),
+            layers.Dense(dense_units, activation='relu'),
+            layers.Dense(1),
+        ]
+    )
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=learning_rate, clipnorm=clipnorm),
         loss=keras.losses.Huber(delta=huber_delta),

@@ -47,6 +47,7 @@ def build_agent_executor(
         llm = build_llm(cfg)
     if tools is None:
         from src.agent.tools import get_all_tools
+
         tools = get_all_tools()
 
     if len(tools) < 3:

@@ -16,15 +16,15 @@ def _sample_arrays(n: int = 100) -> tuple[np.ndarray, np.ndarray]:
 def test_metrics_perfect_prediction() -> None:
     y = np.array([1.0, 2.0, 3.0])
     m = _metrics(y, y)
-    assert m["mae"] == pytest.approx(0.0)
-    assert m["rmse"] == pytest.approx(0.0)
-    assert m["mape"] == pytest.approx(0.0)
+    assert m['mae'] == pytest.approx(0.0)
+    assert m['rmse'] == pytest.approx(0.0)
+    assert m['mape'] == pytest.approx(0.0)
 
 
 def test_metrics_keys() -> None:
     y = np.array([1.0, 2.0])
     m = _metrics(y, y * 1.1)
-    assert {"mae", "rmse", "mape"} == set(m.keys())
+    assert {'mae', 'rmse', 'mape'} == set(m.keys())
 
 
 def test_directional_accuracy_perfect() -> None:
@@ -58,7 +58,7 @@ def test_naive_baseline_evaluate_keys() -> None:
     close_t, close_t_h = _sample_arrays(80)
     model = NaiveBaseline()
     result = model.evaluate(close_t_h, close_t)
-    assert {"mae", "rmse", "mape", "directional_accuracy"} == set(result.keys())
+    assert {'mae', 'rmse', 'mape', 'directional_accuracy'} == set(result.keys())
 
 
 def test_sma_baseline_predict_shape() -> None:
@@ -72,12 +72,13 @@ def test_sma_baseline_evaluate_keys() -> None:
     close_t, close_t_h = _sample_arrays(100)
     model = SMABaseline(window=10)
     result = model.evaluate(close_t_h, close_t, close_t)
-    assert {"mae", "rmse", "mape", "directional_accuracy"} == set(result.keys())
+    assert {'mae', 'rmse', 'mape', 'directional_accuracy'} == set(result.keys())
 
 
 def test_build_lstm_model_output_shape() -> None:
     from src.models.baseline import build_lstm_model
+
     model = build_lstm_model(lookback=10, n_features=4, lstm_units=[8, 4], dense_units=4)
-    X = np.random.default_rng(1).random((5, 10, 4)).astype("float32")
+    X = np.random.default_rng(1).random((5, 10, 4)).astype('float32')
     out = model.predict(X, verbose=0)
     assert out.shape == (5, 1)

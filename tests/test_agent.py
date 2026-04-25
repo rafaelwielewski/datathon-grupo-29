@@ -60,10 +60,12 @@ def _make_mock_ohlcv(n: int = 90, rsi_value: float = 55.0) -> pd.DataFrame:
 
 # --- Tools ---
 
+
 def test_get_technical_indicators_expected_keys():
     with patch('src.agent.tools.yf.download') as mock_dl:
         mock_dl.return_value = _make_mock_ohlcv()
         from src.agent.tools import get_technical_indicators
+
         result = json.loads(get_technical_indicators.invoke('AAPL'))
         assert 'rsi_14' in result
         assert 'macd' in result
@@ -79,6 +81,7 @@ def test_get_technical_indicators_date_is_latest():
     with patch('src.agent.tools.yf.download') as mock_dl:
         mock_dl.return_value = df
         from src.agent.tools import get_technical_indicators
+
         result = json.loads(get_technical_indicators.invoke('AAPL'))
         assert result['date'] == expected_date
 
@@ -87,6 +90,7 @@ def test_get_technical_indicators_rsi_neutral():
     with patch('src.agent.tools.yf.download') as mock_dl:
         mock_dl.return_value = _make_mock_ohlcv(rsi_value=55.0)
         from src.agent.tools import get_technical_indicators
+
         result = json.loads(get_technical_indicators.invoke('AAPL'))
         assert result['rsi_signal'] in ('NEUTRAL', 'OVERBOUGHT', 'OVERSOLD')
 
@@ -97,10 +101,11 @@ def test_get_technical_indicators_rsi_overbought():
     n = 90
     close = 150.0 + np.cumsum(np.abs(rng.normal(1.5, 0.1, n)))  # só sobe
     dates = pd.date_range('2024-01-01', periods=n, freq='B')
-    df = pd.DataFrame({'Close': close, 'High': close+1, 'Low': close-1, 'Open': close, 'Volume': 1e6}, index=dates)
+    df = pd.DataFrame({'Close': close, 'High': close + 1, 'Low': close - 1, 'Open': close, 'Volume': 1e6}, index=dates)
     with patch('src.agent.tools.yf.download') as mock_dl:
         mock_dl.return_value = df
         from src.agent.tools import get_technical_indicators
+
         result = json.loads(get_technical_indicators.invoke('AAPL'))
         assert result['rsi_signal'] == 'OVERBOUGHT'
 
@@ -108,14 +113,17 @@ def test_get_technical_indicators_rsi_overbought():
 def test_calculate_position_risk_low(tmp_path: Path):
     metrics = {
         'model': {
-            'mae_price': 7.36, 'rmse_price': 9.86,
-            'mape_price_pct': 3.27, 'directional_accuracy_pct': 52.5,
+            'mae_price': 7.36,
+            'rmse_price': 9.86,
+            'mape_price_pct': 3.27,
+            'directional_accuracy_pct': 52.5,
         },
         'baselines': {},
     }
     (tmp_path / 'metrics.json').write_text(json.dumps(metrics))
     with patch('src.agent.tools.METRICS_PATH', tmp_path / 'metrics.json'):
         from src.agent.tools import calculate_position_risk
+
         result = json.loads(calculate_position_risk.invoke('50'))
         assert result['risk_level'] == 'LOW'
         assert result['position_size'] == 50
@@ -126,14 +134,17 @@ def test_calculate_position_risk_low(tmp_path: Path):
 def test_calculate_position_risk_high(tmp_path: Path):
     metrics = {
         'model': {
-            'mae_price': 7.36, 'rmse_price': 9.86,
-            'mape_price_pct': 3.27, 'directional_accuracy_pct': 52.5,
+            'mae_price': 7.36,
+            'rmse_price': 9.86,
+            'mape_price_pct': 3.27,
+            'directional_accuracy_pct': 52.5,
         },
         'baselines': {},
     }
     (tmp_path / 'metrics.json').write_text(json.dumps(metrics))
     with patch('src.agent.tools.METRICS_PATH', tmp_path / 'metrics.json'):
         from src.agent.tools import calculate_position_risk
+
         result = json.loads(calculate_position_risk.invoke('1000'))
         assert result['risk_level'] == 'HIGH'
         assert result['requires_human_review']
@@ -141,11 +152,13 @@ def test_calculate_position_risk_high(tmp_path: Path):
 
 def test_get_all_tools_has_three():
     from src.agent.tools import get_all_tools
+
     tools = get_all_tools()
     assert len(tools) >= 3
 
 
 # --- RAG ---
+
 
 def test_build_knowledge_base_docs_loads_markdown(tmp_path: Path):
     kb_dir = tmp_path / 'kb'
@@ -154,6 +167,7 @@ def test_build_knowledge_base_docs_loads_markdown(tmp_path: Path):
 
     cfg = {'rag': {'knowledge_base_dirs': [str(kb_dir)], 'chunk_size': 200, 'chunk_overlap': 20}}
     from src.agent.rag_pipeline import build_knowledge_base_docs
+
     docs = build_knowledge_base_docs(cfg)
     assert len(docs) >= 1
     assert any('AAPL' in d.page_content or 'RSI' in d.page_content for d in docs)
@@ -162,11 +176,13 @@ def test_build_knowledge_base_docs_loads_markdown(tmp_path: Path):
 def test_build_knowledge_base_docs_missing_dir_returns_empty(tmp_path: Path):
     cfg = {'rag': {'knowledge_base_dirs': [str(tmp_path / 'nonexistent')], 'chunk_size': 200, 'chunk_overlap': 20}}
     from src.agent.rag_pipeline import build_knowledge_base_docs
+
     docs = build_knowledge_base_docs(cfg)
     assert docs == []
 
 
 # --- Agent ---
+
 
 def test_build_agent_executor_accepts_mock_llm():
     from src.agent.react_agent import build_agent_executor
@@ -249,11 +265,11 @@ def test_build_llm_returns_chat_ollama():
 
 
 def test_predict_price_delta_insufficient_data():
-    with patch('src.agent.tools.yf.download') as mock_dl, \
-         patch('src.agent.tools.build_features') as mock_bf:
+    with patch('src.agent.tools.yf.download') as mock_dl, patch('src.agent.tools.build_features') as mock_bf:
         mock_dl.return_value = _make_mock_ohlcv(n=20)  # df com Close válido
         mock_bf.return_value = _make_mock_feats(n=10)  # menos que LOOKBACK=60
         from src.agent.tools import predict_price_delta
+
         result = json.loads(predict_price_delta.invoke('AAPL'))
         assert 'error' in result
 
@@ -262,6 +278,7 @@ def test_predict_price_delta_download_failure():
     with patch('src.agent.tools.yf.download') as mock_dl:
         mock_dl.return_value = MagicMock(empty=True)
         from src.agent.tools import predict_price_delta
+
         result = json.loads(predict_price_delta.invoke('AAPL'))
         assert 'error' in result
 
@@ -271,5 +288,6 @@ def test_get_technical_indicators_download_failure():
         mock_dl.return_value = MagicMock(empty=True)
 
         from src.agent.tools import get_technical_indicators
+
         result = json.loads(get_technical_indicators.invoke('AAPL'))
         assert 'error' in result

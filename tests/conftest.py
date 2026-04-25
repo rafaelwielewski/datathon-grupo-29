@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import os
 
-os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
-os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
+os.environ.setdefault('CUDA_VISIBLE_DEVICES', '')
+os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '3')
 
 import numpy as np
 import pandas as pd
@@ -20,9 +20,9 @@ def raw_ohlcv() -> pd.DataFrame:
     low = close - rng.uniform(0.5, 2.0, n)
     open_ = close + rng.normal(0, 0.5, n)
     volume = rng.integers(1_000_000, 10_000_000, n).astype(float)
-    dates = pd.date_range("2022-01-03", periods=n, freq="B")
+    dates = pd.date_range('2022-01-03', periods=n, freq='B')
     return pd.DataFrame(
-        {"Close": close, "High": high, "Low": low, "Open": open_, "Volume": volume},
+        {'Close': close, 'High': high, 'Low': low, 'Open': open_, 'Volume': volume},
         index=dates,
     )
 
@@ -30,4 +30,5 @@ def raw_ohlcv() -> pd.DataFrame:
 @pytest.fixture
 def feature_df(raw_ohlcv: pd.DataFrame) -> pd.DataFrame:
     from src.features.feature_engineering import build_features
+
     return build_features(raw_ohlcv)
