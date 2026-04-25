@@ -265,7 +265,12 @@ def test_build_llm_returns_chat_ollama():
 
 
 def test_predict_price_delta_insufficient_data():
-    with patch('src.agent.tools.yf.download') as mock_dl, patch('src.agent.tools.build_features') as mock_bf:
+    with (
+        patch('src.agent.tools.yf.download') as mock_dl,
+        patch('src.agent.tools.build_features') as mock_bf,
+        patch('onnxruntime.InferenceSession'),
+        patch('joblib.load'),
+    ):
         mock_dl.return_value = _make_mock_ohlcv(n=20)  # df com Close válido
         mock_bf.return_value = _make_mock_feats(n=10)  # menos que LOOKBACK=60
         from src.agent.tools import predict_price_delta
