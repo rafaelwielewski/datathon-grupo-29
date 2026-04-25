@@ -38,6 +38,7 @@ def build_llm(cfg: dict | None = None) -> BaseChatModel:
 
 def _resolve_api_key(provider: str) -> str:
     import os
+
     if provider == 'github':
         return os.environ['GITHUB_TOKEN']
     return os.environ['OPENAI_API_KEY']

@@ -248,7 +248,9 @@ agent:
 
 def test_build_llm_returns_chat_openai():
     import os
+
     from langchain_openai import ChatOpenAI  # noqa: I001
+
     from src.agent.react_agent import build_llm
 
     cfg = {
