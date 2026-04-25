@@ -886,11 +886,11 @@ Use este checklist como guia antes do Demo Day:
 - [x] `pyproject.toml` com todas as dependências
 
 ### Etapa 2 — LLM + Agente
-- [ ] LLM servido via API com quantização aplicada
-- [ ] Agente ReAct funcional com ≥ 3 tools relevantes ao domínio
-- [ ] RAG retornando contexto relevante dos dados fornecidos
+- [x] LLM servido via API com quantização aplicada (Ollama llama3.2:3b Q4)
+- [x] Agente ReAct funcional com ≥ 3 tools relevantes ao domínio
+- [x] RAG retornando contexto relevante dos dados fornecidos
 - [x] CI/CD pipeline funcional (GitHub Actions)
-- [ ] Benchmark documentado com ≥ 3 configurações
+- [x] Benchmark documentado com ≥ 3 configurações
 
 ### Etapa 3 — Avaliação + Observabilidade
 - [ ] Golden set com ≥ 20 pares relevantes ao domínio

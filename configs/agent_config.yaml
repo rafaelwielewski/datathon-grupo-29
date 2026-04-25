@@ -1,0 +1,20 @@
+llm:
+  provider: ollama
+  model: llama3.2:3b        # modelo 4-bit quantizado via Ollama
+  base_url: http://localhost:11434
+  temperature: 0.0
+  max_tokens: 2048
+
+rag:
+  embedding_model: all-MiniLM-L6-v2   # sentence-transformers, roda local
+  chunk_size: 512
+  chunk_overlap: 50
+  k_results: 4
+  knowledge_base_dirs:
+    - data/knowledge_base
+    - docs
+
+agent:
+  max_iterations: 10
+  verbose: true
+  handle_parsing_errors: true

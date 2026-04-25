@@ -19,6 +19,12 @@ dependencies = [
     "matplotlib>=3.8.0",
     "plotly>=5.18.0",
     "statsmodels>=0.14.0",
+    "langchain>=0.3.0",
+    "langchain-ollama>=0.2.0",
+    "langchain-community>=0.3.0",
+    "langchain-huggingface>=0.1.0",
+    "faiss-cpu>=1.8.0",
+    "sentence-transformers>=3.0.0",
 ]
 
 [project.optional-dependencies]
