@@ -53,16 +53,22 @@ def build_agent_executor(
     if len(tools) < 3:
         logger.warning('Datathon exige >= 3 tools. Fornecidas: %d', len(tools))
 
+    logger.info('Agent built with %d tools: %s', len(tools), [t.name for t in tools])
     return create_agent(model=llm, tools=tools, system_prompt=SYSTEM_PROMPT)
 
 
 def invoke_agent(agent, question: str) -> dict:
     """Invoca o agente e retorna output normalizado."""
-    result = agent.invoke({'messages': [{'role': 'user', 'content': question}]})
+    try:
+        result = agent.invoke({'messages': [{'role': 'user', 'content': question}]})
+    except Exception:
+        logger.exception('Agent invocation failed for question: %s', question)
+        raise
     messages = result.get('messages', [])
     answer = messages[-1].content if messages else ''
     steps = [
         {'role': str(m.type), 'content': str(m.content)}
         for m in messages[1:]  # skip human message
     ]
+    logger.debug('Agent used %d intermediate steps', len(steps))
     return {'output': answer, 'intermediate_steps': steps}

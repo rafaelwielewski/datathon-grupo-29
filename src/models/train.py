@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import shutil
+import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -28,6 +31,8 @@ from src.features.feature_engineering import (
     temporal_split,
 )
 from src.models.baseline import NaiveBaseline, SMABaseline, build_lstm_model
+
+logger = logging.getLogger(__name__)
 
 CONFIG_PATH = Path('configs/model_config.yaml')
 
@@ -79,7 +84,7 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
 
     # 1. Download
     symbol = data_cfg['symbol']
-    print(f'Downloading {symbol}...')
+    logger.info('Downloading %s...', symbol)
     df = _download_data(symbol, data_cfg['start_date'], data_cfg['end_date'])
 
     # 2. Features
@@ -123,12 +128,12 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
     ct_test = ct_w[test_m]
     cth_test = cth_w[test_m]
 
-    print(f'Train: {X_train.shape} | Val: {X_val.shape} | Test: {X_test.shape}')
+    logger.info('Train: %s | Val: %s | Test: %s', X_train.shape, X_val.shape, X_test.shape)
 
     # 6. MLflow run
     mlflow.set_tracking_uri('sqlite:///mlflow.db')
     mlflow.set_experiment('datathon-grupo-29')
-    with mlflow.start_run():
+    with mlflow.start_run() as run:
         mlflow.log_params(
             {
                 'symbol': symbol,
@@ -137,8 +142,17 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
                 'epochs': train_cfg['epochs'],
                 'batch_size': train_cfg['batch_size'],
                 'learning_rate': train_cfg['learning_rate'],
+                'n_features': len(FEATURE_COLS),
+                'n_samples_train': int(X_train.shape[0]),
             }
         )
+
+        mlflow.set_tag('model_type', 'regression')
+        mlflow.set_tag('framework', 'tensorflow')
+        mlflow.set_tag('owner', 'grupo-29')
+        mlflow.set_tag('phase', 'datathon-fase05')
+        mlflow.set_tag('risk_level', 'medium')
+        mlflow.set_tag('git_sha', _get_git_sha())
 
         model = build_lstm_model(
             lookback=lookback,
@@ -186,8 +200,7 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
         dir_acc = _dir_accuracy(true_price, pred_price, ct_test)
         horizon = model_cfg['horizon']
 
-        print(f'\n=== LSTM D+{horizon} ===')
-        print(f'MAE: {mae:.4f} | RMSE: {rmse:.4f} | MAPE: {mape:.2f}% | DirAcc: {dir_acc:.2f}%')
+        logger.info('LSTM D+%d — MAE: %.4f | RMSE: %.4f | MAPE: %.2f%% | DirAcc: %.2f%%', horizon, mae, rmse, mape, dir_acc)
 
         mlflow.log_metrics(
             {
@@ -208,8 +221,8 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
         sma_pred_test = np.where(np.isnan(sma_pred_test), ct_test, sma_pred_test)
         sma_mae, sma_rmse, sma_mape = _metrics_price(true_price, sma_pred_test)
 
-        print(f'Naive  -> MAE: {naive_m["mae"]:.4f} | MAPE: {naive_m["mape"]:.2f}%')
-        print(f'SMA{lookback}  -> MAE: {sma_mae:.4f} | MAPE: {sma_mape:.2f}%')
+        logger.info('Naive  -> MAE: %.4f | MAPE: %.2f%%', naive_m['mae'], naive_m['mape'])
+        logger.info('SMA%d  -> MAE: %.4f | MAPE: %.2f%%', lookback, sma_mae, sma_mape)
 
         # 9. Save artifacts
         model.save(str(artifacts_dir / 'final_model.keras'))
@@ -225,6 +238,7 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
             'features': FEATURE_COLS,
             'target': f'delta_close = close_(t+{horizon}) - close_t',
             'trained_at': datetime.now().isoformat(),
+            'mlflow_run_id': run.info.run_id,
             'splits': {
                 'train_rows': int(X_train.shape[0]),
                 'val_rows': int(X_val.shape[0]),
@@ -251,9 +265,17 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
         # 10. Export ONNX
         _export_onnx(model, artifacts_dir)
 
-        print(f'\nArtifacts saved in: {artifacts_dir.resolve()}')
+        logger.info('Artifacts saved in: %s', artifacts_dir.resolve())
 
     return metrics_out
+
+
+def _get_git_sha() -> str:
+    try:
+        result = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], capture_output=True, text=True)
+        return result.stdout.strip() if result.returncode == 0 else 'unknown'
+    except Exception:
+        return 'unknown'
 
 
 def _export_onnx(model, artifacts_dir: Path) -> None:
@@ -261,22 +283,20 @@ def _export_onnx(model, artifacts_dir: Path) -> None:
     onnx_path = str(artifacts_dir / 'final_model.onnx')
     try:
         model.export(saved_model_dir)
-        import subprocess
-        import sys
-
         result = subprocess.run(
             [sys.executable, '-m', 'tf2onnx.convert', '--saved-model', saved_model_dir, '--output', onnx_path, '--opset', '13'],
             capture_output=True,
             text=True,
         )
         if result.returncode == 0:
-            print(f'ONNX model saved: {onnx_path}')
+            logger.info('ONNX model saved: %s', onnx_path)
         else:
-            print('ONNX conversion failed — Keras model still available.')
+            logger.warning('ONNX conversion failed — Keras model still available.')
     finally:
         if os.path.exists(saved_model_dir):
             shutil.rmtree(saved_model_dir)
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s — %(message)s')
     train()
