@@ -33,6 +33,11 @@ def predict_price_delta(symbol: str = 'AAPL') -> str:
     df = yf.download('AAPL', period=f'{LOOKBACK + 30}d', progress=False)
     if df is None or df.empty:
         return json.dumps({'error': 'Failed to download market data.'})
+
+    # Preço atual = último fechamento real do df (antes do dropna do build_features)
+    import pandas as pd
+    current_price = float(pd.Series(df['Close'].values.flatten()).dropna().iloc[-1])
+
     feats = build_features(df)
 
     if len(feats) < LOOKBACK:
@@ -43,7 +48,6 @@ def predict_price_delta(symbol: str = 'AAPL') -> str:
 
     pred_scaled = sess.run(None, {sess.get_inputs()[0].name: X_scaled})[0]
     pred_delta = float(scaler_y.inverse_transform(pred_scaled)[0, 0])
-    current_price = float(feats['close'].iloc[-1])
 
     return json.dumps({
         'symbol': 'AAPL',
@@ -65,23 +69,40 @@ def get_technical_indicators(symbol: str = 'AAPL') -> str:
     Returns:
         JSON with RSI-14, MACD, MACD signal, SMA-7, SMA-21, vol-21 and current price.
     """
+    from src.features.feature_engineering import rsi as compute_rsi  # noqa: I001
+    import pandas as pd
+
     df = yf.download(symbol, period='90d', progress=False)
     if df is None or df.empty:
         return json.dumps({'error': f'Failed to download data for {symbol}.'})
-    feats = build_features(df)
-    latest = feats.iloc[-1]
 
-    rsi = float(latest['rsi_14'])
-    rsi_signal = 'OVERBOUGHT' if rsi > 70 else 'OVERSOLD' if rsi < 30 else 'NEUTRAL'
-    import pandas as pd
-    last_date = str(pd.DatetimeIndex(feats.index)[-1].date())
+    # Computa indicadores direto no df bruto — sem o shift(-5) do target que dropa os últimos 5 dias
+    close = pd.Series(df['Close'].values.flatten(), index=df.index, dtype=float)
+    ema_12 = close.ewm(span=12, adjust=False).mean()
+    ema_26 = close.ewm(span=26, adjust=False).mean()
+    macd = ema_12 - ema_26
+    macd_signal = macd.ewm(span=9, adjust=False).mean()
+
+    indicators = pd.DataFrame({
+        'close': close,
+        'sma_7': close.rolling(7).mean(),
+        'sma_21': close.rolling(21).mean(),
+        'macd': macd,
+        'macd_signal': macd_signal,
+        'rsi_14': compute_rsi(close, 14),
+        'vol_21': close.pct_change().rolling(21).std(),
+    }).dropna()
+
+    latest = indicators.iloc[-1]
+    last_date = str(pd.DatetimeIndex(indicators.index)[-1].date())
+    rsi_val = float(latest['rsi_14'])
 
     return json.dumps({
         'symbol': symbol,
         'date': last_date,
         'close_usd': round(float(latest['close']), 2),
-        'rsi_14': round(rsi, 2),
-        'rsi_signal': rsi_signal,
+        'rsi_14': round(rsi_val, 2),
+        'rsi_signal': 'OVERBOUGHT' if rsi_val > 70 else 'OVERSOLD' if rsi_val < 30 else 'NEUTRAL',
         'macd': round(float(latest['macd']), 4),
         'macd_signal_line': round(float(latest['macd_signal']), 4),
         'macd_crossover': 'BULLISH' if latest['macd'] > latest['macd_signal'] else 'BEARISH',

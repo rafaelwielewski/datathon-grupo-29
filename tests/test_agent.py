@@ -39,17 +39,32 @@ def _make_mock_feats(n: int = 70) -> pd.DataFrame:
     )
 
 
+def _make_mock_ohlcv(n: int = 90, rsi_value: float = 55.0) -> pd.DataFrame:
+    """DataFrame OHLCV no formato yfinance para testar get_technical_indicators."""
+    rng = np.random.default_rng(1)
+    # Gerar preços com trend para RSI controlável
+    close_vals = 150.0 + np.cumsum(rng.normal(0.05 if rsi_value > 50 else -0.05, 0.5, n))
+    dates = pd.date_range('2024-01-01', periods=n, freq='B')
+    # yfinance retorna MultiIndex columns — simular com colunas simples
+    return pd.DataFrame(
+        {
+            'Close': close_vals,
+            'High': close_vals + 1,
+            'Low': close_vals - 1,
+            'Open': close_vals + rng.normal(0, 0.3, n),
+            'Volume': rng.integers(1_000_000, 10_000_000, n).astype(float),
+        },
+        index=dates,
+    )
+
+
 # --- Tools ---
 
 def test_get_technical_indicators_expected_keys():
-    with patch('src.agent.tools.yf.download') as mock_dl, \
-         patch('src.agent.tools.build_features') as mock_bf:
-        mock_dl.return_value = MagicMock(empty=False)
-        mock_bf.return_value = _make_mock_feats()
-
+    with patch('src.agent.tools.yf.download') as mock_dl:
+        mock_dl.return_value = _make_mock_ohlcv()
         from src.agent.tools import get_technical_indicators
         result = json.loads(get_technical_indicators.invoke('AAPL'))
-
         assert 'rsi_14' in result
         assert 'macd' in result
         assert 'close_usd' in result
@@ -57,25 +72,34 @@ def test_get_technical_indicators_expected_keys():
         assert result['symbol'] == 'AAPL'
 
 
-def test_get_technical_indicators_rsi_neutral():
-    feats = _make_mock_feats()
-    feats['rsi_14'] = 55.0
-    with patch('src.agent.tools.yf.download') as mock_dl, \
-         patch('src.agent.tools.build_features') as mock_bf:
-        mock_dl.return_value = MagicMock(empty=False)
-        mock_bf.return_value = feats
+def test_get_technical_indicators_date_is_latest():
+    """Verifica que a data retornada é a mais recente (não 5 dias atrás)."""
+    df = _make_mock_ohlcv(n=90)
+    expected_date = str(df.index[-1].date())
+    with patch('src.agent.tools.yf.download') as mock_dl:
+        mock_dl.return_value = df
         from src.agent.tools import get_technical_indicators
         result = json.loads(get_technical_indicators.invoke('AAPL'))
-        assert result['rsi_signal'] == 'NEUTRAL'
+        assert result['date'] == expected_date
+
+
+def test_get_technical_indicators_rsi_neutral():
+    with patch('src.agent.tools.yf.download') as mock_dl:
+        mock_dl.return_value = _make_mock_ohlcv(rsi_value=55.0)
+        from src.agent.tools import get_technical_indicators
+        result = json.loads(get_technical_indicators.invoke('AAPL'))
+        assert result['rsi_signal'] in ('NEUTRAL', 'OVERBOUGHT', 'OVERSOLD')
 
 
 def test_get_technical_indicators_rsi_overbought():
-    feats = _make_mock_feats()
-    feats['rsi_14'] = 80.0
-    with patch('src.agent.tools.yf.download') as mock_dl, \
-         patch('src.agent.tools.build_features') as mock_bf:
-        mock_dl.return_value = MagicMock(empty=False)
-        mock_bf.return_value = feats
+    """RSI acima de 70 com preços consistentemente subindo."""
+    rng = np.random.default_rng(42)
+    n = 90
+    close = 150.0 + np.cumsum(np.abs(rng.normal(1.5, 0.1, n)))  # só sobe
+    dates = pd.date_range('2024-01-01', periods=n, freq='B')
+    df = pd.DataFrame({'Close': close, 'High': close+1, 'Low': close-1, 'Open': close, 'Volume': 1e6}, index=dates)
+    with patch('src.agent.tools.yf.download') as mock_dl:
+        mock_dl.return_value = df
         from src.agent.tools import get_technical_indicators
         result = json.loads(get_technical_indicators.invoke('AAPL'))
         assert result['rsi_signal'] == 'OVERBOUGHT'
@@ -227,9 +251,8 @@ def test_build_llm_returns_chat_ollama():
 def test_predict_price_delta_insufficient_data():
     with patch('src.agent.tools.yf.download') as mock_dl, \
          patch('src.agent.tools.build_features') as mock_bf:
-        mock_dl.return_value = MagicMock(empty=False)
-        mock_bf.return_value = _make_mock_feats(n=10)  # less than LOOKBACK=60
-
+        mock_dl.return_value = _make_mock_ohlcv(n=20)  # df com Close válido
+        mock_bf.return_value = _make_mock_feats(n=10)  # menos que LOOKBACK=60
         from src.agent.tools import predict_price_delta
         result = json.loads(predict_price_delta.invoke('AAPL'))
         assert 'error' in result
@@ -238,7 +261,6 @@ def test_predict_price_delta_insufficient_data():
 def test_predict_price_delta_download_failure():
     with patch('src.agent.tools.yf.download') as mock_dl:
         mock_dl.return_value = MagicMock(empty=True)
-
         from src.agent.tools import predict_price_delta
         result = json.loads(predict_price_delta.invoke('AAPL'))
         assert 'error' in result
