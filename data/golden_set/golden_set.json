@@ -1,0 +1,182 @@
+[
+  {
+    "query": "What is the AAPL price prediction for the next 5 days?",
+    "expected_answer": "The LSTM model predicts the AAPL closing price 5 trading days ahead based on 60 days of historical data and technical indicators.",
+    "contexts": [
+      "The LSTM model predicts D+5 closing price delta using 60-day lookback window.",
+      "Prediction uses features: RSI-14, MACD, SMA-7, SMA-21, EMA-12, EMA-26, volatility.",
+      "The model outputs predicted_delta_d5_usd added to current_price_usd."
+    ]
+  },
+  {
+    "query": "Is AAPL overbought or oversold right now?",
+    "expected_answer": "RSI above 70 indicates overbought, below 30 oversold, between 30-70 is neutral.",
+    "contexts": [
+      "RSI-14 above 70 signals overbought territory.",
+      "RSI-14 below 30 signals oversold territory.",
+      "MACD crossover: bullish when MACD line crosses above signal line."
+    ]
+  },
+  {
+    "query": "What is the risk for a position of 100 AAPL shares?",
+    "expected_answer": "Risk is calculated from MAE and RMSE of the LSTM model. LOW risk for positions under 100 shares.",
+    "contexts": [
+      "Risk level: LOW for position_size <= 100, MEDIUM for <= 500, HIGH above 500.",
+      "VaR 95% = RMSE * 2 per share. VaR 99% = RMSE * 3 per share.",
+      "requires_human_review is True when position_size > 500."
+    ]
+  },
+  {
+    "query": "What is the current AAPL trend based on moving averages?",
+    "expected_answer": "The trend is determined by comparing SMA-7 to SMA-21. UP when SMA-7 > SMA-21, DOWN otherwise.",
+    "contexts": [
+      "SMA-7 above SMA-21 indicates short-term uptrend.",
+      "SMA-7 below SMA-21 indicates short-term downtrend.",
+      "EMA-12 and EMA-26 are used for MACD calculation."
+    ]
+  },
+  {
+    "query": "How reliable is the AAPL price prediction model?",
+    "expected_answer": "Model reliability is measured by MAE, RMSE, MAPE and directional accuracy on the test set.",
+    "contexts": [
+      "Directional accuracy measures how often the model correctly predicts price direction.",
+      "MAPE measures percentage error relative to true price.",
+      "MAE measures average absolute error in USD."
+    ]
+  },
+  {
+    "query": "Should I buy AAPL stock based on current technical indicators?",
+    "expected_answer": "The agent provides technical analysis data but does not give financial advice. Consult a financial advisor.",
+    "contexts": [
+      "This assistant provides market data and model predictions for informational purposes only.",
+      "MACD bullish crossover and RSI neutral suggest positive momentum.",
+      "Investment decisions should consider multiple factors beyond technical indicators."
+    ]
+  },
+  {
+    "query": "What is the MACD signal for AAPL?",
+    "expected_answer": "MACD is calculated as EMA-12 minus EMA-26. Bullish when MACD line is above signal line (EMA-9 of MACD).",
+    "contexts": [
+      "MACD = EMA-12 - EMA-26.",
+      "MACD signal line = EMA-9 of MACD.",
+      "BULLISH crossover when MACD > signal line, BEARISH when MACD < signal line."
+    ]
+  },
+  {
+    "query": "What is the volatility of AAPL over the last 21 days?",
+    "expected_answer": "21-day volatility is the standard deviation of daily returns over the past 21 trading days.",
+    "contexts": [
+      "vol_21 is computed as rolling 21-day std of daily percentage returns.",
+      "Higher volatility increases prediction uncertainty.",
+      "Volatility is one of the 16 features used by the LSTM model."
+    ]
+  },
+  {
+    "query": "How many features does the LSTM model use?",
+    "expected_answer": "The LSTM model uses 16 technical features including price, returns, SMAs, EMAs, MACD, RSI, and volatility.",
+    "contexts": [
+      "Feature set: close, high, low, open, volume, ret_1, log_ret_1, sma_7, sma_21, ema_12, ema_26, macd, macd_signal, rsi_14, vol_7, vol_21.",
+      "The model uses a 60-day lookback window to create sequences.",
+      "Target variable is y_delta_h = close(t+5) - close(t)."
+    ]
+  },
+  {
+    "query": "What is the lookback window used by the prediction model?",
+    "expected_answer": "The LSTM model uses a 60-day lookback window, meaning it analyzes 60 trading days of history to make each prediction.",
+    "contexts": [
+      "LOOKBACK = 60 trading days of historical data per prediction.",
+      "Each sequence consists of 60 timesteps x 16 features.",
+      "The model predicts 5 days ahead (D+5 horizon)."
+    ]
+  },
+  {
+    "query": "What is the expected AAPL price in 5 days?",
+    "expected_answer": "The predicted price is computed as current_price_usd + predicted_delta_d5_usd from the LSTM model.",
+    "contexts": [
+      "predicted_price_d5_usd = current_price_usd + predicted_delta_d5_usd.",
+      "The model predicts the price delta, not the absolute price.",
+      "Direction is UP if predicted_delta > 0, DOWN otherwise."
+    ]
+  },
+  {
+    "query": "What is the VaR for 500 AAPL shares at 99% confidence?",
+    "expected_answer": "VaR 99% total = RMSE * 3 * position_size. For 500 shares, this is the maximum expected loss at 99% confidence.",
+    "contexts": [
+      "var_99_per_share_usd = RMSE * 3.",
+      "var_99_total_usd = RMSE * 3 * position_size.",
+      "Risk level for 500 shares is MEDIUM. requires_human_review is False."
+    ]
+  },
+  {
+    "query": "How is RSI calculated for AAPL?",
+    "expected_answer": "RSI-14 uses a 14-period exponential moving average of gains and losses. Values above 70 are overbought, below 30 oversold.",
+    "contexts": [
+      "RSI = 100 - (100 / (1 + RS)) where RS = avg_gain / avg_loss over 14 periods.",
+      "Uses EWM with alpha=1/14 for smoothing.",
+      "RSI ranges from 0 to 100."
+    ]
+  },
+  {
+    "query": "What was AAPL's price direction prediction accuracy?",
+    "expected_answer": "Directional accuracy is the percentage of test set predictions where the model correctly predicted whether the price would go up or down.",
+    "contexts": [
+      "Directional accuracy = % of predictions where sign(pred_delta) == sign(true_delta).",
+      "Baseline comparison: Naive model always predicts delta=0.",
+      "SMA baseline uses rolling mean of the lookback window."
+    ]
+  },
+  {
+    "query": "Is a position of 1000 AAPL shares high risk?",
+    "expected_answer": "Yes. A position of 1000 shares is classified as HIGH risk and requires human review before execution.",
+    "contexts": [
+      "risk_level is HIGH when position_size > 500.",
+      "requires_human_review is True for HIGH risk positions.",
+      "Expected error = MAE * position_size USD."
+    ]
+  },
+  {
+    "query": "What model is used to predict AAPL prices?",
+    "expected_answer": "An LSTM neural network trained on 60-day windows of 16 technical indicators, deployed as an ONNX model for inference.",
+    "contexts": [
+      "Architecture: LSTM(64) -> Dropout -> LSTM(32) -> Dropout -> Dense(16) -> Dense(1).",
+      "Model is exported to ONNX format for production inference via onnxruntime.",
+      "Training uses Huber loss with Adam optimizer, EarlyStopping and ReduceLROnPlateau."
+    ]
+  },
+  {
+    "query": "What does a bullish MACD crossover mean for AAPL?",
+    "expected_answer": "A bullish MACD crossover occurs when the MACD line crosses above the signal line, suggesting positive short-term momentum.",
+    "contexts": [
+      "BULLISH crossover: MACD line crosses above signal line.",
+      "BEARISH crossover: MACD line crosses below signal line.",
+      "MACD signal line is a 9-period EMA of the MACD line."
+    ]
+  },
+  {
+    "query": "How does the agent use the tools to answer questions?",
+    "expected_answer": "The ReAct agent decides which tool to call based on the question, executes it, observes the result, and synthesizes a final answer.",
+    "contexts": [
+      "The agent uses ReAct (Reasoning + Acting) pattern.",
+      "Available tools: predict_price_delta, get_technical_indicators, calculate_position_risk.",
+      "The agent can chain multiple tool calls to answer complex questions."
+    ]
+  },
+  {
+    "query": "What scaler is used to normalize features before prediction?",
+    "expected_answer": "RobustScaler from scikit-learn, fitted only on training data to prevent data leakage.",
+    "contexts": [
+      "RobustScaler uses median and IQR, robust to outliers.",
+      "Scaler is fitted only on training split to prevent data leakage.",
+      "Separate scalers for features (scaler_X) and target (scaler_y)."
+    ]
+  },
+  {
+    "query": "What is the horizon of the AAPL price prediction?",
+    "expected_answer": "The model predicts 5 trading days (D+5) into the future, meaning the closing price 5 business days from today.",
+    "contexts": [
+      "horizon = 5 trading days (configurable in model_config.yaml).",
+      "Target: y_delta_h = close(t+5) - close(t).",
+      "Prediction is for closing price, not intraday price."
+    ]
+  }
+]
