@@ -246,22 +246,24 @@ agent:
     assert cfg['llm']['model'] == 'llama3.2:3b'
 
 
-def test_build_llm_returns_chat_ollama():
-    from langchain_ollama import ChatOllama  # noqa: I001
+def test_build_llm_returns_chat_openai():
+    import os
+    from langchain_openai import ChatOpenAI  # noqa: I001
     from src.agent.react_agent import build_llm
 
     cfg = {
         'llm': {
-            'provider': 'ollama',
-            'model': 'llama3.2:3b',
-            'base_url': 'http://localhost:11434',
+            'provider': 'github',
+            'model': 'gpt-4o-mini',
+            'base_url': 'https://models.inference.ai.azure.com',
             'temperature': 0.0,
             'max_tokens': 512,
         }
     }
+    os.environ.setdefault('GITHUB_TOKEN', 'github_pat_test')
     llm = build_llm(cfg)
-    assert isinstance(llm, ChatOllama)
-    assert llm.model == 'llama3.2:3b'
+    assert isinstance(llm, ChatOpenAI)
+    assert llm.model_name == 'gpt-4o-mini'
 
 
 def test_predict_price_delta_insufficient_data():

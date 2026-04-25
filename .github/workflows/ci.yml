@@ -35,6 +35,8 @@ jobs:
         run: bandit -r src/ -c pyproject.toml
 
       - name: Unit tests (pytest)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pytest tests/ -x \
             --cov=src \

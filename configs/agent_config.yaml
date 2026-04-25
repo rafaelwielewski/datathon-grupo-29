@@ -1,7 +1,7 @@
 llm:
-  provider: ollama
-  model: llama3.2:3b        # modelo 4-bit quantizado via Ollama
-  base_url: http://localhost:11434
+  provider: github
+  model: gpt-4o-mini
+  base_url: https://models.inference.ai.azure.com
   temperature: 0.0
   max_tokens: 2048
 

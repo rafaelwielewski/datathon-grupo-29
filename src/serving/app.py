@@ -57,6 +57,8 @@ class LoggedRoute(APIRoute):
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    from dotenv import load_dotenv
+    load_dotenv()
     configure_logging()
     logger.info('Application starting up')
     yield
