@@ -122,11 +122,7 @@ def _default_rag_fn() -> Callable[[str], tuple[str, list[str]]]:
         resp = requests.post('http://localhost:8000/query', json={'question': query}, timeout=60)  # noqa: S113
         data = resp.json()
         answer = data.get('answer', '')
-        contexts = [
-            step['content']
-            for step in (data.get('intermediate_steps') or [])
-            if step.get('role') == 'tool'
-        ]
+        contexts = [step['content'] for step in (data.get('intermediate_steps') or []) if step.get('role') == 'tool']
         return answer, contexts
 
     return rag_fn
