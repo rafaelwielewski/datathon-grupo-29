@@ -893,9 +893,9 @@ Use este checklist como guia antes do Demo Day:
 - [x] Benchmark documentado com ≥ 3 configurações
 
 ### Etapa 3 — Avaliação + Observabilidade
-- [ ] Golden set com ≥ 20 pares relevantes ao domínio
-- [ ] RAGAS: 4 métricas calculadas e reportadas
-- [ ] LLM-as-judge com ≥ 3 critérios (incluindo critério de negócio)
+- [x] Golden set com ≥ 20 pares relevantes ao domínio
+- [x] RAGAS: 4 métricas calculadas e reportadas
+- [x] LLM-as-judge com ≥ 3 critérios (incluindo critério de negócio)
 - [ ] Telemetria e dashboard funcionando end-to-end
 - [ ] Detecção de drift implementada e documentada
 
