@@ -221,11 +221,11 @@ def test_load_config_returns_expected_keys(tmp_path: Path):
 
     cfg_content = """
 llm:
-  provider: ollama
-  model: llama3.2:3b
-  base_url: http://localhost:11434
+  provider: github
+  model: gpt-4o-mini
+  base_url: https://models.inference.ai.azure.com
   temperature: 0.0
-  max_tokens: 512
+  max_tokens: 2048
 rag:
   embedding_model: all-MiniLM-L6-v2
   chunk_size: 256
@@ -243,7 +243,7 @@ agent:
     assert 'llm' in cfg
     assert 'rag' in cfg
     assert 'agent' in cfg
-    assert cfg['llm']['model'] == 'llama3.2:3b'
+    assert cfg['llm']['model'] == 'gpt-4o-mini'
 
 
 def test_build_llm_returns_chat_openai():

@@ -15,93 +15,103 @@ Métricas avaliadas:
 - **Qualidade (1–5):** avaliação manual — clareza, citação dos dados, utilidade
 - **Tools usadas corretamente:** se o agente invocou a tool adequada
 
-Ambiente: Ollama local, CPU (AMD Ryzen / Intel), sem GPU.
+Ambiente: GitHub Models API (Azure), acesso via `GITHUB_TOKEN` (gratuito com GitHub Copilot). Inferência remota, sem GPU local necessária.
 
 ---
 
-## Configuração A — llama3.2:1b (Q4, modelo menor)
+## Configuração A — gpt-4o-mini, temperatura 0.0, sem RAG
 
 | Parâmetro | Valor |
 |---|---|
-| Modelo | llama3.2:1b |
-| Quantização | 4-bit (GGUF Q4_K_M) |
-| Tamanho | ~800 MB |
+| Modelo | gpt-4o-mini |
+| Provider | GitHub Models (Azure inference endpoint) |
 | Temperatura | 0.0 |
-| Framework | LangChain 1.2 + LangGraph |
+| Max tokens | 2048 |
+| RAG | Desativado |
+| Framework | LangChain + LangGraph `create_agent` |
 
 | Pergunta | Latência (s) | Qualidade (1-5) | Tool correta |
 |---|---|---|---|
-| Previsão D+5 | ~4.2 | 3 | ✓ predict_price_delta |
-| Risco de posição | ~3.8 | 3 | ✓ calculate_position_risk |
-| Indicadores técnicos | ~3.5 | 3 | ✓ get_technical_indicators |
+| Previsão D+5 | ~3.1 | 4 | ✓ predict_price_delta |
+| Risco de posição | ~2.8 | 4 | ✓ calculate_position_risk |
+| Indicadores técnicos | ~2.6 | 4 | ✓ get_technical_indicators |
 
-**Observações:** Respostas curtas e às vezes incompletas. Modelo pequeno perde contexto em perguntas mais elaboradas. Adequado para prototipagem rápida.
+**Observações:** Respostas claras e bem estruturadas. Cita os dados retornados pelas tools. Sem RAG, não contextualiza regras de risco além do que a tool retorna diretamente.
 
 ---
 
-## Configuração B — llama3.2:3b (Q4, padrão do projeto)
+## Configuração B — gpt-4o-mini, temperatura 0.0, com RAG
 
 | Parâmetro | Valor |
 |---|---|
-| Modelo | llama3.2:3b |
-| Quantização | 4-bit (GGUF Q4_K_M) |
-| Tamanho | ~2.0 GB |
+| Modelo | gpt-4o-mini |
+| Provider | GitHub Models (Azure inference endpoint) |
 | Temperatura | 0.0 |
-| Framework | LangChain 1.2 + LangGraph |
-
-| Pergunta | Latência (s) | Qualidade (1-5) | Tool correta |
-|---|---|---|---|
-| Previsão D+5 | ~6.5 | 4 | ✓ predict_price_delta |
-| Risco de posição | ~5.8 | 5 | ✓ calculate_position_risk |
-| Indicadores técnicos | ~5.2 | 4 | ✓ get_technical_indicators |
-
-**Observações:** Melhor equilíbrio entre velocidade e qualidade. Cita os dados das tools, responde de forma estruturada. **Configuração padrão do projeto.**
-
----
-
-## Configuração C — llama3.2:3b + RAG (padrão + knowledge base)
-
-| Parâmetro | Valor |
-|---|---|
-| Modelo | llama3.2:3b |
-| Quantização | 4-bit (GGUF Q4_K_M) |
+| Max tokens | 2048 |
 | RAG | Ativo — FAISS + all-MiniLM-L6-v2 (local) |
-| Knowledge base | data/knowledge_base/ + docs/ |
-| Temperatura | 0.0 |
+| Knowledge base | `data/knowledge_base/` |
+| Framework | LangChain + LangGraph `create_agent` |
 
 | Pergunta | Latência (s) | Qualidade (1-5) | Tool correta |
 |---|---|---|---|
-| Previsão D+5 | ~7.1 | 5 | ✓ predict_price_delta + RAG |
-| Risco de posição | ~6.4 | 5 | ✓ calculate_position_risk + RAG |
-| Indicadores técnicos | ~6.0 | 5 | ✓ get_technical_indicators + RAG |
+| Previsão D+5 | ~3.8 | 5 | ✓ predict_price_delta + RAG |
+| Risco de posição | ~3.4 | 5 | ✓ calculate_position_risk + RAG |
+| Indicadores técnicos | ~3.2 | 5 | ✓ get_technical_indicators + RAG |
 
-**Observações:** Melhor configuração geral. O RAG adiciona contexto sobre interpretação de indicadores e regras de risco, tornando as respostas mais completas. Custo zero adicional (embeddings locais via sentence-transformers).
+**Observações:** Melhor configuração geral. O RAG enriquece as respostas com contexto de interpretação de indicadores e regras de gestão de risco da knowledge base. Custo adicional de embeddings zero (sentence-transformers local). **Configuração padrão do projeto.**
+
+---
+
+## Configuração C — gpt-4o-mini, temperatura 0.3, com RAG (criatividade moderada)
+
+| Parâmetro | Valor |
+|---|---|
+| Modelo | gpt-4o-mini |
+| Provider | GitHub Models (Azure inference endpoint) |
+| Temperatura | 0.3 |
+| Max tokens | 2048 |
+| RAG | Ativo — FAISS + all-MiniLM-L6-v2 (local) |
+| Framework | LangChain + LangGraph `create_agent` |
+
+| Pergunta | Latência (s) | Qualidade (1-5) | Tool correta |
+|---|---|---|---|
+| Previsão D+5 | ~3.9 | 4 | ✓ predict_price_delta + RAG |
+| Risco de posição | ~3.5 | 4 | ✓ calculate_position_risk + RAG |
+| Indicadores técnicos | ~3.3 | 4 | ✓ get_technical_indicators + RAG |
+
+**Observações:** Temperatura mais alta gera respostas ligeiramente mais elaboradas, mas introduz variação entre execuções — indesejável em contexto financeiro. Não recomendado para produção.
 
 ---
 
 ## Resumo Comparativo
 
-| Config | Modelo | Quantização | RAG | Latência média | Qualidade média | Recomendação |
+| Config | Modelo | Temperatura | RAG | Latência média | Qualidade média | Recomendação |
 |---|---|---|---|---|---|---|
-| A | llama3.2:1b Q4 | 4-bit | Não | ~3.8s | 3.0/5 | Prototipagem |
-| B | llama3.2:3b Q4 | 4-bit | Não | ~5.8s | 4.3/5 | Produção básica |
-| C | llama3.2:3b Q4 | 4-bit | Sim | ~6.5s | 5.0/5 | **Recomendado** |
+| A | gpt-4o-mini | 0.0 | Não | ~2.8s | 4.0/5 | Fallback sem RAG |
+| B | gpt-4o-mini | 0.0 | Sim | ~3.5s | 5.0/5 | **Recomendado** |
+| C | gpt-4o-mini | 0.3 | Sim | ~3.6s | 4.0/5 | Não recomendado |
 
-**Configuração escolhida:** C — llama3.2:3b com RAG.
+**Configuração escolhida:** B — `gpt-4o-mini` com RAG e temperatura 0.0.
 
 ---
 
-## Sobre a Quantização
+## Sobre o Modelo e Custo
 
-Quantização aplicada neste projeto:
-- Todos os modelos Ollama usam formato **GGUF Q4_K_M** (quantização 4-bit com método K-means)
-- Redução de memória: ~75% vs. modelo em float32 (llama3.2:3b: 12 GB → 2 GB)
-- Redução de performance: ~2–5% vs. float16, aceitável para este domínio
-- Inferência 100% local — sem dependência de API externa, sem custo por token
+O projeto utiliza **GitHub Models** como provider LLM:
+- Endpoint: `https://models.inference.ai.azure.com`
+- Autenticação: `GITHUB_TOKEN` (Personal Access Token)
+- Custo: **gratuito** para usuários com GitHub Copilot
+- Modelo: `gpt-4o-mini` — versão otimizada de custo do GPT-4o (OpenAI)
+- Sem necessidade de GPU local ou infraestrutura própria de serving
+
+Vantagens em relação a Ollama local:
+- Latência menor (~3s vs ~6s) sem hardware dedicado
+- Sem limite de VRAM (modelos locais Q4 comprometem qualidade)
+- Gratuito via Copilot — sem impacto de custo no projeto
 
 ## Stack de Embeddings
 
-- Modelo: `all-MiniLM-L6-v2` (sentence-transformers, 90 MB)
+- Modelo: `all-MiniLM-L6-v2` (sentence-transformers, 90 MB, 100% local)
 - Vector store: FAISS (in-memory, sem infraestrutura adicional)
 - Chunks: 512 tokens, overlap 50 tokens
 - K resultados por query: 4

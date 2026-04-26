@@ -101,7 +101,7 @@ def _get_agent():
 @app.get('/health')
 def health() -> dict:
     """Verifica se a API está operacional."""
-    return {'status': 'ok', 'model': 'LSTM ONNX D+5', 'agent': 'ReAct + Ollama'}
+    return {'status': 'ok', 'model': 'LSTM ONNX D+5', 'agent': 'ReAct + gpt-4o-mini'}
 
 
 @app.post('/query', response_model=QueryResponse)

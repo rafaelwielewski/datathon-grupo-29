@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def client():
-    """TestClient com agente mockado — sem chamadas reais ao Ollama."""
+    """TestClient com agente mockado — sem chamadas reais ao LLM."""
     from src.serving import app as app_module
 
     mock_executor = MagicMock()
