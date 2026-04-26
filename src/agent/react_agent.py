@@ -24,15 +24,17 @@ def _load_config(path: Path = CONFIG_PATH) -> dict:
 
 def build_llm(cfg: dict | None = None) -> BaseChatModel:
     """Constrói o LLM a partir do config (GitHub Models ou OpenAI)."""
+    from pydantic import SecretStr
+
     if cfg is None:
         cfg = _load_config()
     llm_cfg = cfg['llm']
     return ChatOpenAI(
         model=llm_cfg['model'],
         base_url=llm_cfg.get('base_url'),
-        api_key=_resolve_api_key(llm_cfg['provider']),
+        api_key=SecretStr(_resolve_api_key(llm_cfg['provider'])),
         temperature=llm_cfg['temperature'],
-        max_tokens=llm_cfg['max_tokens'],
+        max_completion_tokens=llm_cfg['max_tokens'],
     )
 
 
