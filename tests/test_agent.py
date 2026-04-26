@@ -284,7 +284,11 @@ def test_predict_price_delta_insufficient_data():
 
 
 def test_predict_price_delta_download_failure():
-    with patch('src.agent.tools.yf.download') as mock_dl:
+    with (
+        patch('src.agent.tools.yf.download') as mock_dl,
+        patch('onnxruntime.InferenceSession'),
+        patch('joblib.load'),
+    ):
         mock_dl.return_value = MagicMock(empty=True)
         from src.agent.tools import predict_price_delta
 
