@@ -61,9 +61,9 @@ docker-build:
 docker-train:
 	@docker compose --profile train up --build train
 
-# Run serving stack (API + MLflow UI) via Docker Compose
+# Run serving stack (API + MLflow UI + Monitoring) via Docker Compose
 docker-serve:
-	@docker compose --profile serve up --build
+	@docker compose --profile serve --profile monitoring up --build
 
 # Open MLflow UI locally
 mlflow-ui:

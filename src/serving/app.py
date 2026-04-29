@@ -11,10 +11,18 @@ from typing import Callable
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
+from prometheus_client import make_asgi_app
 from pydantic import BaseModel, Field
 from starlette.requests import Request
 from starlette.responses import Response
 
+from src.monitoring.drift import detect_and_log_drift
+from src.monitoring.metrics import (
+    ACTIVE_REQUESTS,
+    MODEL_PREDICTION_DIRECTION,
+    REQUEST_COUNT,
+    REQUEST_LATENCY,
+)
 from src.serving.context import set_request_id
 from src.serving.logging_config import configure_logging
 
@@ -28,6 +36,7 @@ class LoggedRoute(APIRoute):
         async def handler(request: Request) -> Response:
             set_request_id(request.headers.get('x-request-id', uuid.uuid4().hex[:8]))
             start = time.perf_counter()
+            ACTIVE_REQUESTS.inc()
             try:
                 try:
                     body = await request.json()
@@ -45,10 +54,15 @@ class LoggedRoute(APIRoute):
                     resp_log = bytes(response.body).decode(errors='replace')
 
                 logger.info('%s %s %d (%.0fms) | resp: %s', request.method, request.url.path, response.status_code, elapsed, resp_log)
+                REQUEST_COUNT.labels(method=request.method, endpoint=request.url.path, status_code=str(response.status_code)).inc()
+                REQUEST_LATENCY.labels(method=request.method, endpoint=request.url.path).observe(elapsed / 1000)
             except BaseException as exc:
                 elapsed = (time.perf_counter() - start) * 1000
                 logger.error('%s %s (%.0fms) | error: %s', request.method, request.url.path, elapsed, exc, exc_info=True)
+                REQUEST_COUNT.labels(method=request.method, endpoint=request.url.path, status_code='500').inc()
                 raise
+            finally:
+                ACTIVE_REQUESTS.dec()
 
             return response
 
@@ -73,6 +87,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.router.route_class = LoggedRoute
+
+# Prometheus metrics endpoint
+_metrics_app = make_asgi_app()
+app.mount('/metrics', _metrics_app)
 
 
 @app.exception_handler(Exception)
@@ -104,6 +122,12 @@ def health() -> dict:
     return {'status': 'ok', 'model': 'LSTM ONNX D+5', 'agent': 'ReAct + gpt-4o-mini'}
 
 
+@app.get('/drift')
+def drift_report() -> dict:
+    """Detecta drift das features AAPL vs janela de referência histórica."""
+    return detect_and_log_drift()
+
+
 @app.post('/query', response_model=QueryResponse)
 def query(request: QueryRequest) -> QueryResponse:
     """Processa uma pergunta sobre AAPL usando o agente ReAct."""
@@ -111,6 +135,13 @@ def query(request: QueryRequest) -> QueryResponse:
 
     agent = _get_agent()
     result = invoke_agent(agent, request.question)
+
+    answer = result['output'].lower()
+    if 'cair' in answer or 'queda' in answer or 'down' in answer or 'baixa' in answer:
+        MODEL_PREDICTION_DIRECTION.labels(direction='DOWN').inc()
+    elif 'subir' in answer or 'alta' in answer or 'up' in answer or 'crescimento' in answer:
+        MODEL_PREDICTION_DIRECTION.labels(direction='UP').inc()
+
     return QueryResponse(
         answer=result['output'],
         intermediate_steps=result.get('intermediate_steps'),

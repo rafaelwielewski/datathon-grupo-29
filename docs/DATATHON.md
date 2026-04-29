@@ -896,8 +896,8 @@ Use este checklist como guia antes do Demo Day:
 - [x] Golden set com ≥ 20 pares relevantes ao domínio
 - [x] RAGAS: 4 métricas calculadas e reportadas
 - [x] LLM-as-judge com ≥ 3 critérios (incluindo critério de negócio)
-- [ ] Telemetria e dashboard funcionando end-to-end
-- [ ] Detecção de drift implementada e documentada
+- [x] Telemetria e dashboard funcionando end-to-end
+- [x] Detecção de drift implementada e documentada
 
 ### Etapa 4 — Segurança + Governança
 - [ ] OWASP mapping com ≥ 5 ameaças e mitigações

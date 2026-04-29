@@ -1,0 +1,11 @@
+drift:
+  warning_threshold: 0.1
+  retrain_threshold: 0.2
+  lookback_days: 90
+  reference_window:
+    start: "2024-01-01"
+    end: "2026-01-01"
+
+metrics:
+  export_to_prometheus: true
+  export_to_mlflow: true

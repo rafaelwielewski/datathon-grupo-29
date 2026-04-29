@@ -26,6 +26,8 @@ dependencies = [
     "faiss-cpu>=1.8.0",
     "sentence-transformers>=3.0.0",
     "openai>=1.0.0",
+    "prometheus-client>=0.20.0",
+    "evidently>=0.4.0",
 ]
 
 [project.optional-dependencies]

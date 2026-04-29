@@ -21,18 +21,52 @@ services:
     env_file: .env
     depends_on:
       - mlflow
-    profiles: [serve]
+    profiles: [serve, monitoring]
 
   mlflow:
-    image: python:3.11-slim
+    image: ghcr.io/mlflow/mlflow:latest
     command: >
-      sh -c "pip install mlflow -q &&
-             mlflow server
-             --host 0.0.0.0
-             --port 5000
-             --backend-store-uri sqlite:///mlruns.db
-             --default-artifact-root /mlruns"
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri sqlite:///mlflow.db
+      --default-artifact-root /mlruns
     ports:
       - "5000:5000"
     volumes:
       - ./mlruns:/mlruns
+      - ./mlflow.db:/mlflow.db
+    profiles: [serve, monitoring]
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    profiles: [monitoring]
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./configs/grafana_datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - ./configs/grafana_dashboards.yml:/etc/grafana/provisioning/dashboards/providers.yml:ro
+      - ./configs/dashboards:/etc/grafana/provisioning/dashboards/json:ro
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/json/datathon_dashboard.json
+    depends_on:
+      - prometheus
+    profiles: [monitoring]
+
+volumes:
+  prometheus_data:
+  grafana_data:

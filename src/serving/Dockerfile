@@ -7,24 +7,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia apenas o necessário para instalar dependências primeiro (cache layer)
+# Copia pyproject.toml para instalação de dependências
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir -e "." 2>/dev/null || pip install --no-cache-dir \
-    fastapi \
-    uvicorn[standard] \
-    pydantic \
-    onnxruntime \
-    numpy \
-    pandas \
-    scikit-learn \
-    joblib \
-    yfinance \
-    python-dotenv
+RUN pip install --no-cache-dir --default-timeout=100 --retries=10 .
 
 # Copia o código-fonte
 COPY src/ ./src/
 COPY configs/ ./configs/
 COPY data/processed/artifacts/ ./data/processed/artifacts/
+COPY .env ./
 
 EXPOSE 8000
 
