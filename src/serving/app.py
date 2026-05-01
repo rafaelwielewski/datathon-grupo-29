@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from functools import lru_cache
 from typing import Callable
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from prometheus_client import make_asgi_app
@@ -117,6 +117,10 @@ def _get_agent():
     return build_agent_executor()
 
 
+_INPUT_GUARD = InputGuardrail(max_length=1000)
+_OUTPUT_GUARD = OutputGuardrail()
+
+
 @app.get('/health')
 def health() -> dict:
     """Verifica se a API está operacional."""
@@ -134,16 +138,14 @@ def query(request: QueryRequest) -> QueryResponse:
     """Processa uma pergunta sobre AAPL usando o agente ReAct."""
     from src.agent.react_agent import invoke_agent
 
-    input_guard = InputGuardrail(max_length=1000)
-    validation = input_guard.validate(request.question)
+    validation = _INPUT_GUARD.validate(request.question)
     if not validation.is_valid:
-        return JSONResponse(status_code=400, content={'detail': validation.reason})
+        raise HTTPException(status_code=400, detail=validation.reason)
 
     agent = _get_agent()
     result = invoke_agent(agent, request.question)
 
-    output_guard = OutputGuardrail()
-    safe_output = output_guard.sanitize(result['output'])
+    safe_output = _OUTPUT_GUARD.sanitize(result['output'])
 
     answer = safe_output.lower()
     if 'cair' in answer or 'queda' in answer or 'down' in answer or 'baixa' in answer:
@@ -153,5 +155,5 @@ def query(request: QueryRequest) -> QueryResponse:
 
     return QueryResponse(
         answer=safe_output,
-        intermediate_steps=result.get('intermediate_steps'),
+        intermediate_steps=None,
     )

@@ -42,7 +42,11 @@ class InputGuardrail:
 
         for pattern in self._compiled_patterns:
             if pattern.search(user_input):
-                logger.warning('Prompt injection detected: %s', user_input[:200])
+                logger.warning(
+                    'Prompt injection detected; matched_pattern=%s input_length=%d',
+                    pattern.pattern,
+                    len(user_input),
+                )
                 return GuardrailResult(False, 'Input blocked: suspicious pattern detected.')
 
         return GuardrailResult(True, 'OK')
