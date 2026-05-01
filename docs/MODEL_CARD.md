@@ -181,3 +181,21 @@ O RMSE de **$9.86** pode ser usado como proxy conservador para o desvio padrão 
 | Artefatos | `data/processed/artifacts/` (DVC) |
 | Risk level | Medium |
 | Fairness checked | Não aplicável (ativo financeiro, sem atributos sensíveis) |
+
+---
+
+## 9. Explicabilidade e Fairness
+
+### 9.1 Explicabilidade
+- O modelo usa features tecnicas (preco, volume e indicadores) com janela temporal fixa.
+- Interpretabilidade e suportada por:
+  - Analise de sensibilidade em features (permutacao) para identificar impacto em MAE/RMSE.
+  - Verificacao de sinais por indicador (ex: SMA, RSI, MACD) usando regras de negocio.
+- Para o demo, usamos explicacoes textuais baseadas nos indicadores mais recentes e no sinal direcional do modelo.
+
+### 9.2 Fairness
+- Nao ha atributos sensiveis ou dados pessoais (apenas series de mercado publico).
+- Nao existe segmentacao por grupos protegidos, portanto fairness classica (paridade de erro entre grupos) nao se aplica.
+- Mitigacoes complementares:
+  - Validacao de ausencia de leakage temporal.
+  - Avaliacao em regimes distintos (alta volatilidade vs baixa volatilidade) para reduzir vies de periodo.
