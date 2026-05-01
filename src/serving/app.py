@@ -23,6 +23,7 @@ from src.monitoring.metrics import (
     REQUEST_COUNT,
     REQUEST_LATENCY,
 )
+from src.security.guardrails import InputGuardrail, OutputGuardrail
 from src.serving.context import set_request_id
 from src.serving.logging_config import configure_logging
 
@@ -133,16 +134,24 @@ def query(request: QueryRequest) -> QueryResponse:
     """Processa uma pergunta sobre AAPL usando o agente ReAct."""
     from src.agent.react_agent import invoke_agent
 
+    input_guard = InputGuardrail(max_length=1000)
+    validation = input_guard.validate(request.question)
+    if not validation.is_valid:
+        return JSONResponse(status_code=400, content={'detail': validation.reason})
+
     agent = _get_agent()
     result = invoke_agent(agent, request.question)
 
-    answer = result['output'].lower()
+    output_guard = OutputGuardrail()
+    safe_output = output_guard.sanitize(result['output'])
+
+    answer = safe_output.lower()
     if 'cair' in answer or 'queda' in answer or 'down' in answer or 'baixa' in answer:
         MODEL_PREDICTION_DIRECTION.labels(direction='DOWN').inc()
     elif 'subir' in answer or 'alta' in answer or 'up' in answer or 'crescimento' in answer:
         MODEL_PREDICTION_DIRECTION.labels(direction='UP').inc()
 
     return QueryResponse(
-        answer=result['output'],
+        answer=safe_output,
         intermediate_steps=result.get('intermediate_steps'),
     )
