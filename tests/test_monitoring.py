@@ -71,15 +71,12 @@ def test_run_drift_report_returns_required_keys():
     mock_run = MagicMock()
     mock_run.dict.return_value = {
         'metrics': [
-            {
-                'metric_name': 'DriftedColumnsCount',
-                'value': {'share': 0.05}
-            },
+            {'metric_name': 'DriftedColumnsCount', 'value': {'share': 0.05}},
             {
                 'metric_name': 'ValueDrift',
                 'config': {'column': 'close', 'threshold': 0.05},
-                'value': 0.5 # p-value > 0.05 means no drift
-            }
+                'value': 0.5,  # p-value > 0.05 means no drift
+            },
         ]
     }
     mock_report = MagicMock()
@@ -110,14 +107,7 @@ def test_run_drift_report_detects_drift_above_threshold():
     cur_df = pd.DataFrame({c: rng.normal(5, 1, 50) for c in cols})
 
     mock_run = MagicMock()
-    mock_run.dict.return_value = {
-        'metrics': [
-            {
-                'metric_name': 'DriftedColumnsCount',
-                'value': {'share': 0.15}
-            }
-        ]
-    }
+    mock_run.dict.return_value = {'metrics': [{'metric_name': 'DriftedColumnsCount', 'value': {'share': 0.15}}]}
     mock_report = MagicMock()
     mock_report.run.return_value = mock_run
 

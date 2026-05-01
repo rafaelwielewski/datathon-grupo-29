@@ -900,12 +900,12 @@ Use este checklist como guia antes do Demo Day:
 - [x] Detecção de drift implementada e documentada
 
 ### Etapa 4 — Segurança + Governança
-- [ ] OWASP mapping com ≥ 5 ameaças e mitigações
-- [ ] Guardrails de input e output funcionais
-- [ ] ≥ 5 cenários adversariais testados e documentados
-- [ ] Plano LGPD aplicado ao caso real
-- [ ] Explicabilidade e fairness documentados
-- [ ] System Card completo
+- [x] OWASP mapping com ≥ 5 ameaças e mitigações
+- [x] Guardrails de input e output funcionais
+- [x] ≥ 5 cenários adversariais testados e documentados
+- [x] Plano LGPD aplicado ao caso real
+- [x] Explicabilidade e fairness documentados
+- [x] System Card completo
 
 ### Demo Day
 - [ ] Pitch ≤ 10 min: Problema → Abordagem → Demo → Resultados → Impacto
