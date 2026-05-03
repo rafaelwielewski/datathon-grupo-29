@@ -17,7 +17,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./data/processed/artifacts:/app/data/processed/artifacts
+      - ./data/processed:/app/data/processed
     env_file: .env
     depends_on:
       - mlflow

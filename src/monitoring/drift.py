@@ -6,21 +6,23 @@ from pathlib import Path
 import mlflow
 import pandas as pd
 import yaml
-import yfinance as yf
 
 logger = logging.getLogger(__name__)
 
 CONFIG_PATH = Path('configs/monitoring_config.yaml')
 
 
-def _load_config(path: Path = CONFIG_PATH) -> dict:
+def _load_config(path: Path | None = None) -> dict:
+    if path is None:
+        path = CONFIG_PATH
     if not path.exists():
         return {
             'drift': {
                 'warning_threshold': 0.1,
                 'retrain_threshold': 0.2,
-                'lookback_days': 90,
-                'reference_window': {'start': '2024-01-01', 'end': '2026-01-01'},
+                'reference_parquet': 'data/processed/test_features_ref.parquet',
+                'reference_split': 'train',
+                'current_split': 'test',
             }
         }
     with open(path, encoding='utf-8') as f:
@@ -77,34 +79,36 @@ def run_drift_report(reference_df: pd.DataFrame, current_df: pd.DataFrame, warni
 
 
 def detect_and_log_drift() -> dict:
-    """Baixa dados atuais do AAPL, detecta drift vs janela de referência e loga no MLflow.
-
-    Returns:
-        Dict com resultado do drift ou {'error': ...} em caso de falha.
-    """
-    from src.features.feature_engineering import FEATURE_COLS, build_features
+    """Carrega parquet de features, detecta drift treino vs teste e loga no MLflow."""
 
     cfg = _load_config()
     drift_cfg = cfg['drift']
-    ref_cfg = drift_cfg['reference_window']
-
-    lookback_days = drift_cfg['lookback_days']
-    reference_start = ref_cfg['start']
-    reference_end = ref_cfg['end']
+    ref_parquet = Path(drift_cfg.get('reference_parquet', 'data/processed/test_features_ref.parquet'))
+    ref_split = drift_cfg.get('reference_split', 'train')
+    cur_split = drift_cfg.get('current_split', 'test')
     warning_threshold = drift_cfg['warning_threshold']
+    retrain_threshold = drift_cfg.get('retrain_threshold', 0.2)
 
-    df_current = yf.download('AAPL', period=f'{lookback_days + 30}d', progress=False)
-    if df_current is None or df_current.empty:
-        return {'error': 'Failed to download current market data.'}
+    if not ref_parquet.exists():
+        return {'error': f'Reference parquet not found: {ref_parquet}. Run make train first.'}
 
-    df_ref = yf.download('AAPL', start=reference_start, end=reference_end, progress=False)
-    if df_ref is None or df_ref.empty:
-        return {'error': 'Failed to download reference market data.'}
+    try:
+        df = pd.read_parquet(ref_parquet)
+    except Exception as exc:
+        return {'error': f'Failed to read parquet: {exc}'}
 
-    feats_current = build_features(df_current)[FEATURE_COLS].dropna()
-    feats_ref = build_features(df_ref)[FEATURE_COLS].dropna()
+    if 'split' not in df.columns:
+        return {'error': "Parquet missing 'split' column. Re-run make train."}
 
-    result = run_drift_report(feats_ref, feats_current, warning_threshold)
+    excluded_cols = {'split', 'ARRIVAL_DELAY', 'DELAYED'}
+    feature_cols = [c for c in df.columns if c not in excluded_cols]
+    feats_ref = df[df['split'] == ref_split][feature_cols].dropna()
+    feats_cur = df[df['split'] == cur_split][feature_cols].dropna()
+
+    if feats_ref.empty or feats_cur.empty:
+        return {'error': f'Empty split: ref={len(feats_ref)} rows, cur={len(feats_cur)} rows.'}
+
+    result = run_drift_report(feats_ref, feats_cur, warning_threshold)
 
     from src.monitoring.metrics import DRIFT_SHARE
 
@@ -119,12 +123,15 @@ def detect_and_log_drift() -> dict:
         mlflow.set_tag('phase', 'datathon-fase05')
         mlflow.log_metric('drift_share', result['drift_share'])
         mlflow.log_metric('drift_detected', int(result['drift_detected']))
-        mlflow.log_param('lookback_days', lookback_days)
-        mlflow.log_param('reference_start', reference_start)
-        mlflow.log_param('reference_end', reference_end)
+        mlflow.log_param('ref_split', ref_split)
+        mlflow.log_param('cur_split', cur_split)
         mlflow.log_param('warning_threshold', warning_threshold)
 
-    return result
+    return {
+        **result,
+        'warning_threshold': warning_threshold,
+        'retrain_threshold': retrain_threshold,
+    }
 
 
 if __name__ == '__main__':

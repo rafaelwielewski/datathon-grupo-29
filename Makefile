@@ -10,9 +10,9 @@ setup: install
 install:
 	pip install -e ".[dev]"
 
-# Train the LSTM model and export to ONNX
+# Train the CatBoost classification model for flight delays
 train:
-	@echo "Training LSTM model..."
+	@echo "Training CatBoost flight delay model..."
 	python src/models/train.py
 
 # Start FastAPI serving endpoint locally on port 8000

@@ -3,82 +3,64 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from src.models.baseline import NaiveBaseline, SMABaseline, _metrics, directional_accuracy
+from src.models.baseline import (
+    LogisticRegressionBaseline,
+    MajorityClassBaseline,
+    PriorRateBaseline,
+    classification_metrics,
+)
 
 
-def _sample_arrays(n: int = 100) -> tuple[np.ndarray, np.ndarray]:
+def test_classification_metrics_perfect():
+    y = np.array([0, 1, 0, 1, 1])
+    m = classification_metrics(y, y, y_proba=y.astype(float))
+    assert m['precision'] == pytest.approx(1.0)
+    assert m['recall'] == pytest.approx(1.0)
+    assert m['f1'] == pytest.approx(1.0)
+    assert m['auc'] == pytest.approx(1.0)
+
+
+def test_classification_metrics_no_proba_excludes_auc():
+    y = np.array([0, 1, 0, 1])
+    pred = np.array([1, 1, 0, 0])
+    m = classification_metrics(y, pred)
+    assert {'precision', 'recall', 'f1'} <= set(m.keys())
+    assert 'auc' not in m
+
+
+def test_majority_baseline_predicts_most_frequent():
+    y_train = np.array([0] * 70 + [1] * 30)
     rng = np.random.default_rng(0)
-    close_t = np.full(n, 150.0)
-    close_t_h = close_t + rng.normal(0, 5, n)
-    return close_t.reshape(-1, 1), close_t_h.reshape(-1, 1)
+    X = rng.random((100, 3))
+    model = MajorityClassBaseline().fit(X, y_train)
+    preds = model.predict(rng.random((20, 3)))
+    assert set(preds.tolist()) == {0}
 
 
-def test_metrics_perfect_prediction() -> None:
-    y = np.array([1.0, 2.0, 3.0])
-    m = _metrics(y, y)
-    assert m['mae'] == pytest.approx(0.0)
-    assert m['rmse'] == pytest.approx(0.0)
-    assert m['mape'] == pytest.approx(0.0)
+def test_majority_baseline_evaluate_keys():
+    rng = np.random.default_rng(0)
+    y = np.array([0] * 60 + [1] * 40)
+    X = rng.random((100, 3))
+    result = MajorityClassBaseline().fit(X, y).evaluate(X, y)
+    assert {'precision', 'recall', 'f1'} <= set(result.keys())
 
 
-def test_metrics_keys() -> None:
-    y = np.array([1.0, 2.0])
-    m = _metrics(y, y * 1.1)
-    assert {'mae', 'rmse', 'mape'} == set(m.keys())
+def test_prior_rate_baseline_below_threshold_predicts_zero():
+    y_train = np.array([0] * 80 + [1] * 20)  # prior = 0.20
+    rng = np.random.default_rng(0)
+    X = rng.random((100, 3))
+    # threshold=0.5 > prior=0.20 → predict all 0
+    preds = PriorRateBaseline(threshold=0.5).fit(X, y_train).predict(rng.random((5, 3)))
+    assert set(preds.tolist()) == {0}
 
 
-def test_directional_accuracy_perfect() -> None:
-    close_t = np.array([100.0, 100.0, 100.0])
-    true_price = np.array([105.0, 95.0, 102.0])
-    pred_price = true_price.copy()
-    assert directional_accuracy(true_price, pred_price, close_t) == pytest.approx(100.0)
-
-
-def test_directional_accuracy_zero() -> None:
-    close_t = np.array([100.0, 100.0])
-    true_price = np.array([105.0, 95.0])
-    pred_price = np.array([95.0, 105.0])
-    assert directional_accuracy(true_price, pred_price, close_t) == pytest.approx(0.0)
-
-
-def test_naive_baseline_predict_shape() -> None:
-    close_t, _ = _sample_arrays(50)
-    model = NaiveBaseline().fit(np.zeros((50, 60, 16)), np.zeros(50))
-    pred = model.predict(close_t)
-    assert pred.shape == close_t.shape
-
-
-def test_naive_baseline_predict_equals_close_t() -> None:
-    close_t = np.array([[100.0], [200.0], [150.0]])
-    model = NaiveBaseline()
-    np.testing.assert_array_equal(model.predict(close_t), close_t)
-
-
-def test_naive_baseline_evaluate_keys() -> None:
-    close_t, close_t_h = _sample_arrays(80)
-    model = NaiveBaseline()
-    result = model.evaluate(close_t_h, close_t)
-    assert {'mae', 'rmse', 'mape', 'directional_accuracy'} == set(result.keys())
-
-
-def test_sma_baseline_predict_shape() -> None:
-    close_t, _ = _sample_arrays(100)
-    model = SMABaseline(window=10)
-    pred = model.predict(close_t)
-    assert pred.shape == close_t.shape
-
-
-def test_sma_baseline_evaluate_keys() -> None:
-    close_t, close_t_h = _sample_arrays(100)
-    model = SMABaseline(window=10)
-    result = model.evaluate(close_t_h, close_t, close_t)
-    assert {'mae', 'rmse', 'mape', 'directional_accuracy'} == set(result.keys())
-
-
-def test_build_lstm_model_output_shape() -> None:
-    from src.models.baseline import build_lstm_model
-
-    model = build_lstm_model(lookback=10, n_features=4, lstm_units=[8, 4], dense_units=4)
-    X = np.random.default_rng(1).random((5, 10, 4)).astype('float32')
-    out = model.predict(X, verbose=0)
-    assert out.shape == (5, 1)
+def test_logistic_regression_baseline_learns_simple_pattern():
+    rng = np.random.default_rng(0)
+    X = rng.random((200, 1))
+    y = (X[:, 0] > 0.5).astype(int)
+    model = LogisticRegressionBaseline().fit(X, y)
+    preds = model.predict(np.array([[0.1], [0.9]]))
+    assert preds[0] == 0
+    assert preds[1] == 1
+    m = model.evaluate(X, y)
+    assert m['auc'] > 0.9

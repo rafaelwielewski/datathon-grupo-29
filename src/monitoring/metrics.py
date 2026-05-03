@@ -19,11 +19,10 @@ ACTIVE_REQUESTS = Gauge(
     'Requisições ativas',
 )
 
-# Métrica de Negócio: Monitora o viés das previsões do modelo em produção
-MODEL_PREDICTION_DIRECTION = Counter(
-    'model_prediction_direction_total',
-    'Total de direções previstas pelo modelo',
-    ['direction'],  # UP ou DOWN
+FLIGHT_PREDICTION = Counter(
+    'flight_prediction_total',
+    'Total de predições de atraso de voos',
+    ['prediction'],
 )
 
 # Métrica de Drift: Monitora a parcela de features com drift

@@ -13,16 +13,17 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from prometheus_client import make_asgi_app
 from pydantic import BaseModel, Field
+
 from starlette.requests import Request
 from starlette.responses import Response
 
 from src.monitoring.drift import detect_and_log_drift
 from src.monitoring.metrics import (
     ACTIVE_REQUESTS,
-    MODEL_PREDICTION_DIRECTION,
     REQUEST_COUNT,
     REQUEST_LATENCY,
 )
+
 from src.serving.context import set_request_id
 from src.serving.logging_config import configure_logging
 
@@ -38,24 +39,23 @@ class LoggedRoute(APIRoute):
             start = time.perf_counter()
             ACTIVE_REQUESTS.inc()
             try:
-                try:
-                    body = await request.json()
-                    logger.info('%s %s | req: %s', request.method, request.url.path, body)
-                except Exception:
-                    logger.info('%s %s', request.method, request.url.path)
+                body = await request.json()
+                logger.info('%s %s | req: %s', request.method, request.url.path, body)
+            except Exception:
+                logger.info('%s %s', request.method, request.url.path)
 
-                response: Response = await original(request)
-                elapsed = (time.perf_counter() - start) * 1000
+            response = await original(request)
+            elapsed = (time.perf_counter() - start) * 1000
 
-                try:
-                    resp_data = json.loads(bytes(response.body).decode())
-                    resp_log = resp_data.get('answer', resp_data) if isinstance(resp_data, dict) else resp_data
-                except Exception:
-                    resp_log = bytes(response.body).decode(errors='replace')
+            try:
+                resp_data = json.loads(bytes(response.body).decode())
+                resp_log = resp_data.get('answer', resp_data) if isinstance(resp_data, dict) else resp_data
+            except Exception:
+                resp_log = bytes(response.body).decode(errors='replace')
 
-                logger.info('%s %s %d (%.0fms) | resp: %s', request.method, request.url.path, response.status_code, elapsed, resp_log)
-                REQUEST_COUNT.labels(method=request.method, endpoint=request.url.path, status_code=str(response.status_code)).inc()
-                REQUEST_LATENCY.labels(method=request.method, endpoint=request.url.path).observe(elapsed / 1000)
+            logger.info('%s %s %d (%.0fms) | resp: %s', request.method, request.url.path, response.status_code, elapsed, resp_log)
+            REQUEST_COUNT.labels(method=request.method, endpoint=request.url.path, status_code=str(response.status_code)).inc()
+            REQUEST_LATENCY.labels(method=request.method, endpoint=request.url.path).observe(elapsed / 1000)
             except BaseException as exc:
                 elapsed = (time.perf_counter() - start) * 1000
                 logger.error('%s %s (%.0fms) | error: %s', request.method, request.url.path, elapsed, exc, exc_info=True)
@@ -81,8 +81,8 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(
-    title='AAPL Financial Assistant',
-    description='Agente ReAct para análise de ações AAPL com previsão LSTM D+5.',
+    title='Flight Delay Prediction Assistant',
+    description='Agente ReAct para previsão de atrasos de voos com CatBoost + Platt calibration.',
     version='1.0.0',
     lifespan=lifespan,
 )
@@ -108,41 +108,36 @@ class QueryResponse(BaseModel):
     intermediate_steps: list | None = None
 
 
+@app.get('/health')
+def health() -> dict:
+    """Verifica se a API está operacional."""
+    return {'status': 'ok', 'model': 'CatBoost + Platt', 'agent': 'ReAct + gpt-4o-mini'}
+
+
+@app.get('/drift')
+def drift_report() -> dict:
+    """Detecta drift das features de voo entre splits de referência e atual."""
+    return detect_and_log_drift()
+
+
+@app.post('/query')
+def query(request: QueryRequest) -> QueryResponse:
+    """Processa uma pergunta sobre atrasos de voo usando o agente ReAct."""
+    from src.agent.react_agent import invoke_agent
+
+    agent = _get_agent()
+
+    result = invoke_agent(agent, request.question)
+
+    answer = result['output']
+    steps = result.get('intermediate_steps')
+
+    return QueryResponse(answer=answer, intermediate_steps=steps)
+
+
 @lru_cache(maxsize=1)
 def _get_agent():
     """Inicializa o agente uma única vez (singleton por processo)."""
     from src.agent.react_agent import build_agent_executor
 
     return build_agent_executor()
-
-
-@app.get('/health')
-def health() -> dict:
-    """Verifica se a API está operacional."""
-    return {'status': 'ok', 'model': 'LSTM ONNX D+5', 'agent': 'ReAct + gpt-4o-mini'}
-
-
-@app.get('/drift')
-def drift_report() -> dict:
-    """Detecta drift das features AAPL vs janela de referência histórica."""
-    return detect_and_log_drift()
-
-
-@app.post('/query', response_model=QueryResponse)
-def query(request: QueryRequest) -> QueryResponse:
-    """Processa uma pergunta sobre AAPL usando o agente ReAct."""
-    from src.agent.react_agent import invoke_agent
-
-    agent = _get_agent()
-    result = invoke_agent(agent, request.question)
-
-    answer = result['output'].lower()
-    if 'cair' in answer or 'queda' in answer or 'down' in answer or 'baixa' in answer:
-        MODEL_PREDICTION_DIRECTION.labels(direction='DOWN').inc()
-    elif 'subir' in answer or 'alta' in answer or 'up' in answer or 'crescimento' in answer:
-        MODEL_PREDICTION_DIRECTION.labels(direction='UP').inc()
-
-    return QueryResponse(
-        answer=result['output'],
-        intermediate_steps=result.get('intermediate_steps'),
-    )

@@ -12,9 +12,11 @@ logger = logging.getLogger(__name__)
 
 CONFIG_PATH = Path('configs/agent_config.yaml')
 
-SYSTEM_PROMPT = """You are a financial assistant specialized in Apple Inc. (AAPL) stock analysis.
+SYSTEM_PROMPT = """You are an aviation assistant specialized in US domestic flight delay prediction.
+
+IMPORTANT - Stop reasoning immediately when you find the answer:
 Use the available tools to answer accurately. Always cite the data returned by the tools.
-Be concise and professional. When asked about predictions or risk, always use the tools first."""
+Be concise and professional. When asked about delay probability or airport/airline statistics, always use the tools first."""
 
 
 def _load_config(path: Path = CONFIG_PATH) -> dict:
@@ -51,7 +53,7 @@ def build_agent_executor(
     tools: list | None = None,
     cfg: dict | None = None,
 ):
-    """Constrói agente LangGraph ReAct com as tools do domínio financeiro."""
+    """Constrói agente LangGraph ReAct com as tools do domínio de aviação."""
     if cfg is None:
         cfg = _load_config()
     if llm is None:

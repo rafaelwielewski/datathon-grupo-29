@@ -1,0 +1,5 @@
+outs:
+- md5: 6e638ecd2b3b60efaa9af491d1f2f302
+  size: 23867
+  hash: md5
+  path: airports.csv

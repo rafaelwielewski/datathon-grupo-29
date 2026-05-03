@@ -15,6 +15,7 @@ rag:
     - docs
 
 agent:
-  max_iterations: 10
-  verbose: true
-  handle_parsing_errors: true
+  max_iterations: 5
+  verbose: false
+  handle_parsing_errors: false
+  early_stopping_method: "generate"

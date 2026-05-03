@@ -9,7 +9,7 @@ import mlflow
 
 logger = logging.getLogger(__name__)
 
-JUDGE_PROMPT = """You are an expert evaluator of AI financial assistant responses.
+JUDGE_PROMPT = """You are an expert evaluator of AI aviation assistant responses.
 Score the following response on three criteria from 1 (very poor) to 5 (excellent).
 
 Question: {query}
@@ -18,11 +18,11 @@ Retrieved contexts: {contexts}
 
 Criteria:
 1. relevance (1-5): Does the answer directly address the question?
-2. faithfulness (1-5): Is the answer grounded in the retrieved contexts and factual data from tools?
-3. financial_utility (1-5): Is this answer actionable and useful for financial decision-making?
+2. faithfulness (1-5): Is the answer grounded in the retrieved contexts and tool data?
+3. aviation_utility (1-5): Is this answer actionable and useful for aviation operational decisions?
 
 Respond ONLY with a valid JSON object, no extra text:
-{{"relevance": <int>, "faithfulness": <int>, "financial_utility": <int>}}"""
+{{"relevance": <int>, "faithfulness": <int>, "aviation_utility": <int>}}"""
 
 
 def _load_config() -> dict:
@@ -54,7 +54,7 @@ def judge_answer(
     """Avalia uma resposta com 3 critérios usando LLM-as-judge.
 
     Returns:
-        Dict com relevance, faithfulness, financial_utility (scores 1-5).
+        Dict com relevance, faithfulness, aviation_utility (scores 1-5).
     """
     if llm is None:
         llm = _build_llm()
@@ -66,7 +66,7 @@ def judge_answer(
         scores = json.loads(response.content)
     except (json.JSONDecodeError, AttributeError):
         logger.warning('LLM judge returned invalid JSON: %s', response)
-        scores = {'relevance': 3, 'faithfulness': 3, 'financial_utility': 3}
+        scores = {'relevance': 3, 'faithfulness': 3, 'aviation_utility': 3}
 
     return {k: max(1, min(5, int(v))) for k, v in scores.items()}
 
@@ -79,7 +79,7 @@ def evaluate_with_judge(
     """Avalia o pipeline RAG com LLM-as-judge em todo o golden set.
 
     Returns:
-        Dict com avg_relevance, avg_faithfulness, avg_financial_utility, avg_overall.
+        Dict com avg_relevance, avg_faithfulness, avg_aviation_utility, avg_overall.
     """
     if llm is None:
         llm = _build_llm()
@@ -98,7 +98,7 @@ def evaluate_with_judge(
     result: dict[str, float] = {
         'avg_relevance': sum(s['relevance'] for s in all_scores) / n,
         'avg_faithfulness': sum(s['faithfulness'] for s in all_scores) / n,
-        'avg_financial_utility': sum(s['financial_utility'] for s in all_scores) / n,
+        'avg_aviation_utility': sum(s['aviation_utility'] for s in all_scores) / n,
     }
     result['avg_overall'] = sum(result.values()) / 3
 
@@ -111,7 +111,7 @@ def evaluate_with_judge(
         mlflow.set_tag('owner', 'grupo-29')
         mlflow.set_tag('phase', 'datathon-fase05')
         mlflow.log_param('golden_set_size', n)
-        mlflow.log_param('judge_criteria', 'relevance,faithfulness,financial_utility')
+        mlflow.log_param('judge_criteria', 'relevance,faithfulness,aviation_utility')
         mlflow.log_metrics(result)
 
     return result

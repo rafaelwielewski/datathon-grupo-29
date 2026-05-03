@@ -1,34 +1,45 @@
 data:
-  symbol: "AAPL"
-  start_date: "2018-01-01"
-  end_date: "2026-01-01"
+  flights_csv: "data/raw/flights.csv"
+  airlines_csv: "data/raw/airlines.csv"
+  airports_csv: "data/raw/airports.csv"
 
 splits:
-  val_ratio: 0.15
-  test_ratio: 0.15
+  train_months: [1, 2, 3, 4, 5, 6, 7, 8]
+  val_months: [9, 10]
+  test_months: [11, 12]
+
+sampling:
+  use_train_sampling: true
+  max_samples_per_month: 200000
 
 model:
-  lookback: 60
-  horizon: 5
-  lstm_units: [64, 32]
-  dense_units: 16
-  dropout: 0.2
-  recurrent_dropout: 0.05
+  use_operational_delay_cols: true
+  random_state: 42
+  scale_pos_weight_multiplier: 0.85
 
-training:
-  epochs: 120
-  batch_size: 32
-  learning_rate: 0.0005
-  clipnorm: 1.0
-  huber_delta: 1.0
-  seed: 42
-
-callbacks:
-  early_stopping_patience: 15
-  reduce_lr_factor: 0.5
-  reduce_lr_patience: 4
-  reduce_lr_min: 0.000001
+catboost_params:
+  iterations: 2000
+  learning_rate: 0.06
+  depth: 8
+  min_data_in_leaf: 200
+  l2_leaf_reg: 15
+  loss_function: "Logloss"
+  eval_metric: "Logloss"
+  verbose: 100
+  od_type: "Iter"
+  od_wait: 200
+  max_ctr_complexity: 2
+  one_hot_max_size: 16
+  border_count: 128
+  bootstrap_type: "Bernoulli"
+  subsample: 0.7
+  allow_writing_files: false
+  use_gpu: true
 
 paths:
   artifacts_dir: "data/processed/artifacts"
   data_dir: "data/processed"
+
+target:
+  name: "delayed"
+  threshold_minutes: 15
