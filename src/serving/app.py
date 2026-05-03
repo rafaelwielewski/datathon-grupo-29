@@ -19,6 +19,7 @@ from starlette.responses import Response
 from src.monitoring.drift import detect_and_log_drift
 from src.monitoring.metrics import (
     ACTIVE_REQUESTS,
+    FLIGHT_PREDICTION,
     REQUEST_COUNT,
     REQUEST_LATENCY,
 )
@@ -133,7 +134,11 @@ def query(request: QueryRequest) -> QueryResponse:
     agent = _get_agent()
     result = invoke_agent(agent, request.question)
     safe_output = _OUTPUT_GUARD.sanitize(result['output'])
-    return QueryResponse(answer=safe_output, intermediate_steps=result.get('intermediate_steps'))
+    raw_steps = result.get('intermediate_steps') or []
+    safe_steps = [{'role': s['role'], 'content': _OUTPUT_GUARD.sanitize(s['content'])} for s in raw_steps]
+    delayed_label = 'delayed' if 'delayed: true' in safe_output.lower() or 'atrasado' in safe_output.lower() else 'on_time'
+    FLIGHT_PREDICTION.labels(prediction=delayed_label).inc()
+    return QueryResponse(answer=safe_output, intermediate_steps=safe_steps)
 
 
 @lru_cache(maxsize=1)

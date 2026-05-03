@@ -29,6 +29,7 @@ How to answer common questions:
   values (e.g. 600, 900, 1200, 1500, 1800, 2100) and compare the delayed_probability results.
 - Airline comparison: call get_airline_delay_stats for each airline.
 - Specific flight prediction: call predict_flight_delay with the given parameters.
+- Missing distance/scheduled_time/arrival: omit them (pass null) — the model auto-fills from historical route data.
 
 Rules:
 - Always use tools before answering — never guess statistics.
@@ -44,7 +45,7 @@ class _LLMLogger(BaseCallbackHandler):
         for batch in messages:
             for msg in batch:
                 content = msg.content if isinstance(msg.content, str) else json.dumps(msg.content, ensure_ascii=False)
-                logger.info('LLM ← [%s] %s', getattr(msg, 'type', 'msg'), content)
+                logger.info('LLM ← [%s] %s', getattr(msg, 'type', 'msg'), content[:300])
 
     def on_llm_end(self, response: LLMResult, **_: Any) -> None:
         for batch in response.generations:

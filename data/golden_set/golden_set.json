@@ -5,7 +5,7 @@
     "contexts": [
       "The CatBoost model predicts binary flight delay (arrival >= 15 minutes late).",
       "predict_flight_delay requires: airline, origin, destination, month, day, day_of_week, scheduled_departure, scheduled_arrival, distance, scheduled_time.",
-      "The model outputs delayed (bool), probability (float), confidence (str), threshold (float)."
+      "The model outputs delayed (bool), delayed_probability (float), and threshold (float)."
     ]
   },
   {
@@ -59,7 +59,7 @@
     "contexts": [
       "CatBoost binary classifier trained on months 1-8, validated on 9-10, tested on 11-12.",
       "Threshold optimized for precision >= 66% on the validation set.",
-      "Platt calibration + prior-shift adjustment applied before thresholding."
+      "Platt calibration applied to raw CatBoost probabilities before thresholding."
     ]
   },
   {
@@ -99,12 +99,12 @@
     ]
   },
   {
-    "query": "What does confidence: high mean in the model output?",
-    "expected_answer": "Confidence 'high' means the predicted probability is more than 15 percentage points away from the decision threshold (0.607). This indicates a clear signal in either direction.",
+    "query": "How do I interpret the delayed_probability value returned by the model?",
+    "expected_answer": "delayed_probability is a calibrated probability (0-1) from Platt calibration on the CatBoost raw score. A flight is predicted delayed when delayed_probability >= threshold. The closer to 0.5 the probability is relative to the threshold, the more uncertain the prediction.",
     "contexts": [
-      "confidence='high' when |probability - threshold| > 0.15.",
-      "confidence='medium' when |probability - threshold| > 0.05.",
-      "confidence='low' when the probability is within 5 percentage points of the threshold — outcome is uncertain."
+      "delayed_probability is a Platt-calibrated probability: values closer to 1.0 indicate higher delay risk.",
+      "The model predicts delayed=true when delayed_probability >= threshold (typically ~0.5).",
+      "When delayed_probability is close to the threshold, the prediction is uncertain and external factors should be considered."
     ]
   },
   {
@@ -136,11 +136,11 @@
   },
   {
     "query": "What is the difference between delay probability and delay prediction?",
-    "expected_answer": "The model outputs a probability (0-1) of delay via Platt calibration + prior-shift adjustment. The binary prediction (delayed: true/false) is made by comparing the probability to the threshold (0.607). A flight is predicted delayed if probability >= threshold.",
+    "expected_answer": "The model outputs delayed_probability (0-1) via Platt calibration on CatBoost's raw score. The binary prediction (delayed: true/false) is made by comparing delayed_probability to the threshold. A flight is predicted delayed if delayed_probability >= threshold.",
     "contexts": [
-      "CatBoost raw probability → Platt calibration → prior-shift adjustment → final probability.",
-      "Best threshold (~0.607) is chosen to satisfy precision >= 66% on the validation set.",
-      "Prior-shift adjustment corrects for the difference between validation and test set delay rates."
+      "CatBoost raw probability → Platt calibration → delayed_probability.",
+      "Best threshold is chosen to satisfy precision >= 66% on the validation set.",
+      "delayed=true when delayed_probability >= threshold; delayed=false otherwise."
     ]
   },
   {
@@ -171,12 +171,12 @@
     ]
   },
   {
-    "query": "How should I interpret a flight with confidence: low?",
-    "expected_answer": "Confidence 'low' means the probability is very close to the decision threshold (within 5 percentage points). The model is uncertain — either outcome is plausible. Consider external factors like weather forecasts before making decisions.",
+    "query": "How should I interpret a flight where delayed_probability is very close to the threshold?",
+    "expected_answer": "When delayed_probability is close to the threshold, the model is uncertain — either outcome is plausible. Small changes in conditions could flip the prediction. Consider external factors like weather forecasts and use additional information sources before making decisions.",
     "contexts": [
-      "confidence='low' when |probability - threshold| <= 0.05.",
+      "When |delayed_probability - threshold| is small, the prediction is near the decision boundary.",
       "In this range, small changes in conditions can flip the prediction.",
-      "Low confidence predictions should be treated with caution; use additional information sources."
+      "Uncertain predictions should be treated with caution; use additional information sources."
     ]
   }
 ]

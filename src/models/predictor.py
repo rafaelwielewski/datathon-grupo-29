@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import json
 import logging
+import math
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
@@ -10,6 +13,26 @@ logger = logging.getLogger(__name__)
 
 ARTIFACTS_DIR = Path('data/processed/artifacts')
 TRAIN_PRIOR = 0.18
+MISSING_TOKEN = 'MISSING'  # nosec B105
+
+_airport_state_cache: dict[str, str] | None = None
+_route_stats_cache: dict[str, dict] | None = None
+
+
+def _get_airport_state(iata_code: str) -> str:
+    global _airport_state_cache
+    if _airport_state_cache is None:
+        map_path = ARTIFACTS_DIR / 'airport_state_map.json'
+        _airport_state_cache = json.loads(map_path.read_text()) if map_path.exists() else {}
+    return _airport_state_cache.get(iata_code.upper(), MISSING_TOKEN)
+
+
+def _get_route_stats(origin: str, destination: str) -> dict:
+    global _route_stats_cache
+    if _route_stats_cache is None:
+        stats_path = ARTIFACTS_DIR / 'route_stats.json'
+        _route_stats_cache = json.loads(stats_path.read_text()) if stats_path.exists() else {}
+    return _route_stats_cache.get(f'{origin.upper()}_{destination.upper()}', {})
 
 
 @dataclass
@@ -117,9 +140,41 @@ _CAT_FEATURES = [
 ]
 
 
+def _compute_day_of_year(year: int, month: int, day: int) -> int:
+    try:
+        return (date(year, month, day) - date(year, 1, 1)).days + 1
+    except ValueError:
+        return 180
+
+
+def _compute_distance_bucket(distance: float) -> str:
+    if distance < 500:
+        return 'short'
+    if distance < 1500:
+        return 'medium'
+    return 'long'
+
+
+def _estimate_arrival(dep: float, scheduled_time_min: float) -> float:
+    dep_h, dep_m = int(dep / 100), int(dep % 100)
+    total_min = dep_h * 60 + dep_m + scheduled_time_min
+    arr_h, arr_m = int(total_min / 60) % 24, int(total_min % 60)
+    return arr_h * 100 + arr_m
+
+
 def build_feature_row(params: FlightParams) -> pd.DataFrame:
-    dep_hour = int(params.scheduled_departure / 100)
-    arr_hour = int(params.scheduled_arrival / 100)
+    route = _get_route_stats(params.origin, params.destination)
+
+    distance = float(params.distance) if params.distance is not None else float(route.get('distance', 1000))
+    sched_time = float(params.scheduled_time) if params.scheduled_time is not None else float(route.get('scheduled_time', 150))
+    dep = float(params.scheduled_departure) if params.scheduled_departure is not None else 800.0
+    arr = float(params.scheduled_arrival) if params.scheduled_arrival is not None else _estimate_arrival(dep, sched_time)
+
+    dep_hour = int(dep / 100)
+    arr_hour = int(arr / 100)
+
+    doy = _compute_day_of_year(params.year, params.month, params.day)
+    two_pi = 2.0 * math.pi
 
     row: dict = {
         'YEAR': params.year,
@@ -130,23 +185,23 @@ def build_feature_row(params: FlightParams) -> pd.DataFrame:
         'FLIGHT_NUMBER': 999,
         'TAIL_NUMBER': 'N999AA',
         'ORIGIN_AIRPORT': params.origin.upper(),
-        'ORIGIN_STATE': 'GA',
+        'ORIGIN_STATE': _get_airport_state(params.origin),
         'DESTINATION_AIRPORT': params.destination.upper(),
-        'DEST_STATE': 'CA',
+        'DEST_STATE': _get_airport_state(params.destination),
         'ROUTE': f'{params.origin.upper()}_{params.destination.upper()}',
-        'DISTANCE': params.distance,
-        'SCHEDULED_TIME': params.scheduled_time,
+        'DISTANCE': distance,
+        'SCHEDULED_TIME': sched_time,
         'sched_dep_hour': dep_hour,
-        'sched_dep_minute': int(params.scheduled_departure % 100),
+        'sched_dep_minute': int(dep % 100),
         'sched_dep_period': _period(dep_hour),
         'sched_arr_hour': arr_hour,
-        'sched_arr_minute': int(params.scheduled_arrival % 100),
+        'sched_arr_minute': int(arr % 100),
         'sched_arr_period': _period(arr_hour),
         'is_weekend': int(params.day_of_week in [6, 7]),
-        'distance_bucket': 'long',
-        'day_of_year': 180,
-        'doy_sin': 0.0,
-        'doy_cos': -1.0,
+        'distance_bucket': _compute_distance_bucket(distance),
+        'day_of_year': doy,
+        'doy_sin': math.sin(two_pi * doy / 365.0),
+        'doy_cos': math.cos(two_pi * doy / 365.0),
         'origin_day_hour_logvol': TRAIN_PRIOR,
         'dest_day_hour_logvol': TRAIN_PRIOR,
     }

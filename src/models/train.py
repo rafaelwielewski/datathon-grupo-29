@@ -169,7 +169,7 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
         engineered.get('delayed', engineered.get('DELAYED', pd.Series([0]))).mean(),
     )
 
-    threshold_minutes = 15
+    threshold_minutes = int(cfg.get('target', {}).get('threshold_minutes', 15))
     engineered['DELAYED'] = (engineered['ARRIVAL_DELAY'] >= threshold_minutes).astype(int)
 
     train_months = set(split_cfg['train_months'])
@@ -285,6 +285,18 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
 
         (artifacts_dir / 'airport_stats.json').write_text(json.dumps(airport_stats, indent=2, ensure_ascii=False), encoding='utf-8')
         (artifacts_dir / 'airline_stats.json').write_text(json.dumps(airline_stats, indent=2, ensure_ascii=False), encoding='utf-8')
+
+        airport_state_map = airports_df.set_index('IATA_CODE')['STATE'].to_dict()
+        (artifacts_dir / 'airport_state_map.json').write_text(json.dumps(airport_state_map, ensure_ascii=False), encoding='utf-8')
+
+        route_stats = (
+            engineered.groupby('ROUTE', dropna=False)
+            .agg(distance=('DISTANCE', 'median'), scheduled_time=('SCHEDULED_TIME', 'median'), n_flights=('DISTANCE', 'count'))
+            .round(0)
+            .astype({'distance': int, 'scheduled_time': int, 'n_flights': int})
+            .to_dict(orient='index')
+        )
+        (artifacts_dir / 'route_stats.json').write_text(json.dumps(route_stats, ensure_ascii=False), encoding='utf-8')
 
         drift_export = pd.concat(
             [
