@@ -34,8 +34,11 @@ Ambiente: GitHub Models API (Azure), acesso via `GITHUB_TOKEN`. Inferência remo
 |---|---|---|---|---|---|
 | A | gpt-4.1 | 0.0 | Não | 4.0/5 | Fallback sem RAG |
 | B | gpt-4.1 | 0.0 | Sim | 5.0/5 | **Recomendado** |
+| C | gpt-4.1 | 0.2 | Sim | TBD | Comparar estabilidade |
 
 **Configuração padrão:** B — `gpt-4.1` com RAG (FAISS + all-MiniLM-L6-v2) e temperatura 0.0.
+
+**Config C:** executar benchmark para preencher a qualidade média.
 
 ## Stack de Embeddings
 
