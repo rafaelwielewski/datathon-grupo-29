@@ -8,6 +8,11 @@ services:
       - ./configs:/app/configs
       - ./mlruns:/app/mlruns
     env_file: .env
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - GIT_PYTHON_REFRESH=quiet
+    depends_on:
+      - mlflow
     profiles: [ train ]
 
   serve:
@@ -40,7 +45,7 @@ services:
     volumes:
       - ./mlruns:/mlruns
       - mlflow_data:/mlflow_data
-    profiles: [ serve, monitoring ]
+    profiles: [ serve, monitoring, train ]
 
   prometheus:
     image: prom/prometheus:v2.51.0
