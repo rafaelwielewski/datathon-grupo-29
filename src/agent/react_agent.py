@@ -99,6 +99,19 @@ def _resolve_api_key(provider: str) -> str:
     return os.environ['OPENAI_API_KEY']
 
 
+def _configure_mlflow_tracing() -> None:
+    import os
+
+    import mlflow  # type: ignore[import-untyped]
+    import mlflow.langchain  # type: ignore[import-untyped]
+
+    tracking_uri = os.getenv('MLFLOW_TRACKING_URI', 'sqlite:///mlflow.db')
+    mlflow.set_tracking_uri(tracking_uri)
+    mlflow.set_experiment(os.getenv('MLFLOW_EXPERIMENT_NAME', 'datathon-grupo-29'))
+    mlflow.langchain.autolog(log_traces=True)
+    logger.info('MLflow tracing enabled | tracking_uri=%s', tracking_uri)
+
+
 def build_agent_executor(
     llm: BaseChatModel | None = None,
     tools: list | None = None,
@@ -117,6 +130,7 @@ def build_agent_executor(
     if len(tools) < 3:
         logger.warning('Datathon exige >= 3 tools. Fornecidas: %d', len(tools))
 
+    _configure_mlflow_tracing()
     logger.info('Agent built with %d tools: %s', len(tools), [t.name for t in tools])
     return create_agent(model=llm, tools=tools, system_prompt=SYSTEM_PROMPT)
 
