@@ -3,9 +3,16 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import yaml
 from langchain.tools import tool
 
 ARTIFACTS_DIR = Path('data/processed/artifacts')
+CONFIG_PATH = Path('configs/agent_config.yaml')
+
+
+def _load_config(path: Path = CONFIG_PATH) -> dict:
+    with open(path, encoding='utf-8') as f:
+        return yaml.safe_load(f)
 
 
 @tool
@@ -67,4 +74,8 @@ def get_airline_delay_stats(airline_code: str = 'AA') -> str:
 
 
 def get_all_tools() -> list:
-    return [predict_flight_delay, get_airport_delay_stats, get_airline_delay_stats]
+    from src.agent.rag_pipeline import build_rag_tool
+
+    cfg = _load_config()
+    rag_tool = build_rag_tool(cfg)
+    return [predict_flight_delay, get_airport_delay_stats, get_airline_delay_stats, rag_tool]
