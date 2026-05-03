@@ -8,6 +8,11 @@ from pathlib import Path
 
 import joblib
 import mlflow
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 import mlflow.pyfunc as pyfunc
 import numpy as np
 import pandas as pd
