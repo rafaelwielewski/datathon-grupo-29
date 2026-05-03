@@ -8,7 +8,7 @@ services:
       - ./configs:/app/configs
       - ./mlruns:/app/mlruns
     env_file: .env
-    profiles: [train]
+    profiles: [ train ]
 
   serve:
     build:
@@ -18,28 +18,28 @@ services:
       - "8000:8000"
     volumes:
       - ./data/processed:/app/data/processed
+      - ./src:/app/src:rw
+      - ./configs:/app/configs:ro
+      - ./.env:/.env:ro
+    # Use --reload in development so code changes are picked up by uvicorn
+    command: uvicorn src.serving.app:app --host 0.0.0.0 --port 8000 --reload
     env_file: .env
     environment:
       - MLFLOW_TRACKING_URI=http://mlflow:5000
     depends_on:
       - mlflow
-    profiles: [serve, monitoring]
+    profiles: [ serve, monitoring ]
 
   mlflow:
     image: ghcr.io/mlflow/mlflow:latest
     command: >
-      mlflow server
-      --host 0.0.0.0
-      --port 5000
-      --backend-store-uri sqlite:////mlflow.db
-      --default-artifact-root /mlruns
-      --allowed-hosts "mlflow,mlflow:5000,localhost,localhost:5000,127.0.0.1,127.0.0.1:5000"
+      mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:////mlflow.db --default-artifact-root /mlruns --allowed-hosts "mlflow,mlflow:5000,localhost,localhost:5000,127.0.0.1,127.0.0.1:5000"
     ports:
       - "5000:5000"
     volumes:
       - ./mlruns:/mlruns
       - ./mlflow.db:/mlflow.db
-    profiles: [serve, monitoring]
+    profiles: [ serve, monitoring ]
 
   prometheus:
     image: prom/prometheus:v2.51.0
@@ -51,7 +51,7 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-    profiles: [monitoring]
+    profiles: [ monitoring ]
 
   grafana:
     image: grafana/grafana:10.4.0
@@ -68,7 +68,7 @@ services:
       - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/json/datathon_dashboard.json
     depends_on:
       - prometheus
-    profiles: [monitoring]
+    profiles: [ monitoring ]
 
 volumes:
   prometheus_data:
