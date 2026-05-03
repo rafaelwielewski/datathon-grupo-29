@@ -107,13 +107,24 @@ def detect_and_log_drift() -> dict:
     max_sample: int = drift_cfg.get('max_sample_size', 5000)
 
     # Rolling-window features always diverge between temporal splits — not production signals.
-    _ROLLING_PREFIXES = ('te_', 'tail_', 'origin_dep_', 'origin_weather_', 'origin_system_',
-                         'origin_late_', 'origin_hour_', 'dest_day_', 'origin_day_',
-                         'route_dep_', 'route_delayed_')
+    _ROLLING_PREFIXES = (
+        'te_',
+        'tail_',
+        'origin_dep_',
+        'origin_weather_',
+        'origin_system_',
+        'origin_late_',
+        'origin_hour_',
+        'dest_day_',
+        'origin_day_',
+        'route_dep_',
+        'route_delayed_',
+    )
 
     def _is_rolling(col: str) -> bool:
-        return col.endswith(('_w3', '_w5', '_w7', '_w10', '_w14', '_w30', '_w60', '_w90', '_w180')) \
-            or any(col.startswith(p) for p in _ROLLING_PREFIXES)
+        return col.endswith(('_w3', '_w5', '_w7', '_w10', '_w14', '_w30', '_w60', '_w90', '_w180')) or any(
+            col.startswith(p) for p in _ROLLING_PREFIXES
+        )
 
     excluded_cols = {'split', 'ARRIVAL_DELAY', 'DELAYED'} | set(cfg_excluded)
     feature_cols = [c for c in df.columns if c not in excluded_cols and not _is_rolling(c)]
@@ -162,7 +173,7 @@ def detect_and_log_drift() -> dict:
         mlflow.log_param('strategy', strategy)
         mlflow.log_param('warning_threshold', warning_threshold)
         for entry in result.get('top_drifted_features', []):
-            mlflow.log_metric(f"drift_pval_{entry['feature']}", entry['p_value'])
+            mlflow.log_metric(f'drift_pval_{entry["feature"]}', entry['p_value'])
 
     return {
         **result,
