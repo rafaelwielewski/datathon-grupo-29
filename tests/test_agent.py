@@ -7,7 +7,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-
 # --- Tools ---
 
 
@@ -152,6 +151,7 @@ def test_build_agent_executor_accepts_mock_llm():
 
 def test_invoke_agent_normalizes_output():
     from langchain_core.messages import AIMessage, HumanMessage
+
     from src.agent.react_agent import invoke_agent
 
     mock_agent = MagicMock()
@@ -195,6 +195,7 @@ agent:
 
 def test_build_llm_returns_chat_openai():
     from langchain_openai import ChatOpenAI
+
     from src.agent.react_agent import build_llm
 
     os.environ.setdefault('GITHUB_TOKEN', 'github_pat_test')

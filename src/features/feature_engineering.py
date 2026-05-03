@@ -3,47 +3,80 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-MISSING_TOKEN = 'MISSING'
+MISSING_TOKEN = 'MISSING'  # nosec B105
 TRAIN_PRIOR = 0.18
 
 BASE_FEATURE_COLS = [
-    'YEAR', 'MONTH', 'DAY', 'DAY_OF_WEEK',
-    'AIRLINE', 'FLIGHT_NUMBER', 'TAIL_NUMBER',
-    'ORIGIN_AIRPORT', 'ORIGIN_STATE',
-    'DESTINATION_AIRPORT', 'DEST_STATE',
+    'YEAR',
+    'MONTH',
+    'DAY',
+    'DAY_OF_WEEK',
+    'AIRLINE',
+    'FLIGHT_NUMBER',
+    'TAIL_NUMBER',
+    'ORIGIN_AIRPORT',
+    'ORIGIN_STATE',
+    'DESTINATION_AIRPORT',
+    'DEST_STATE',
     'ROUTE',
-    'DISTANCE', 'SCHEDULED_TIME',
-    'sched_dep_hour', 'sched_dep_minute', 'sched_dep_period',
-    'sched_arr_hour', 'sched_arr_minute', 'sched_arr_period',
+    'DISTANCE',
+    'SCHEDULED_TIME',
+    'sched_dep_hour',
+    'sched_dep_minute',
+    'sched_dep_period',
+    'sched_arr_hour',
+    'sched_arr_minute',
+    'sched_arr_period',
     'is_weekend',
     'distance_bucket',
-    'day_of_year', 'doy_sin', 'doy_cos',
-    'origin_day_hour_logvol', 'dest_day_hour_logvol',
-    'te_airline_w7', 'te_airline_w30',
-    'te_origin_w7', 'te_origin_w30',
-    'te_dest_w7', 'te_dest_w30',
-    'te_route_w7', 'te_route_w30',
-    'te_origin_hour_w7', 'te_origin_hour_w30',
+    'day_of_year',
+    'doy_sin',
+    'doy_cos',
+    'origin_day_hour_logvol',
+    'dest_day_hour_logvol',
+    'te_airline_w7',
+    'te_airline_w30',
+    'te_origin_w7',
+    'te_origin_w30',
+    'te_dest_w7',
+    'te_dest_w30',
+    'te_route_w7',
+    'te_route_w30',
+    'te_origin_hour_w7',
+    'te_origin_hour_w30',
     'te_origin_dow_w30',
 ]
 
 OPS_FEATURE_COLS = [
-    'tail_dep_delay_mean_w3', 'tail_dep_delay_mean_w5', 'tail_dep_delay_mean_w10',
-    'tail_delayed_rate_w5', 'tail_delayed_rate_w10',
-    'origin_dep_delay_mean_w30', 'origin_dep_delay_mean_w90',
-    'origin_weather_rate_w90', 'origin_weather_rate_w180',
-    'origin_system_rate_w90', 'origin_system_rate_w180',
-    'origin_late_aircraft_rate_w90', 'origin_late_aircraft_rate_w180',
+    'tail_dep_delay_mean_w3',
+    'tail_dep_delay_mean_w5',
+    'tail_dep_delay_mean_w10',
+    'tail_delayed_rate_w5',
+    'tail_delayed_rate_w10',
+    'origin_dep_delay_mean_w30',
+    'origin_dep_delay_mean_w90',
+    'origin_weather_rate_w90',
+    'origin_weather_rate_w180',
+    'origin_system_rate_w90',
+    'origin_system_rate_w180',
+    'origin_late_aircraft_rate_w90',
+    'origin_late_aircraft_rate_w180',
     'origin_hour_dep_delay_mean_w30',
     'route_dep_delay_mean_w30',
     'route_delayed_rate_w30',
 ]
 
 CAT_FEATURES = [
-    'AIRLINE', 'ORIGIN_AIRPORT', 'ORIGIN_STATE',
-    'DESTINATION_AIRPORT', 'DEST_STATE',
-    'sched_dep_period', 'sched_arr_period',
-    'distance_bucket', 'ROUTE', 'TAIL_NUMBER',
+    'AIRLINE',
+    'ORIGIN_AIRPORT',
+    'ORIGIN_STATE',
+    'DESTINATION_AIRPORT',
+    'DEST_STATE',
+    'sched_dep_period',
+    'sched_arr_period',
+    'distance_bucket',
+    'ROUTE',
+    'TAIL_NUMBER',
 ]
 
 FEATURE_COLS = BASE_FEATURE_COLS
@@ -131,21 +164,15 @@ def add_congestion_features(df: pd.DataFrame) -> pd.DataFrame:
     if 'sched_dep_hour' not in df.columns or 'sched_arr_hour' not in df.columns:
         raise ValueError('Missing hour columns; call add_time_features first')
     g1 = df.groupby(['flight_date', 'ORIGIN_AIRPORT', 'sched_dep_hour'], dropna=False).size()
-    df['origin_day_hour_volume'] = (
-        df.set_index(['flight_date', 'ORIGIN_AIRPORT', 'sched_dep_hour']).index.map(g1).astype('float32')
-    )
+    df['origin_day_hour_volume'] = df.set_index(['flight_date', 'ORIGIN_AIRPORT', 'sched_dep_hour']).index.map(g1).astype('float32')
     g2 = df.groupby(['flight_date', 'DESTINATION_AIRPORT', 'sched_arr_hour'], dropna=False).size()
-    df['dest_day_hour_volume'] = (
-        df.set_index(['flight_date', 'DESTINATION_AIRPORT', 'sched_arr_hour']).index.map(g2).astype('float32')
-    )
+    df['dest_day_hour_volume'] = df.set_index(['flight_date', 'DESTINATION_AIRPORT', 'sched_arr_hour']).index.map(g2).astype('float32')
     df['origin_day_hour_logvol'] = np.log1p(df['origin_day_hour_volume']).astype('float32')
     df['dest_day_hour_logvol'] = np.log1p(df['dest_day_hour_volume']).astype('float32')
     return df
 
 
-def add_rolling_target_rate(
-    df: pd.DataFrame, group_cols: list[str], out_col: str, windows: tuple = (7, 30)
-) -> pd.DataFrame:
+def add_rolling_target_rate(df: pd.DataFrame, group_cols: list[str], out_col: str, windows: tuple = (7, 30)) -> pd.DataFrame:
     df = df.copy().sort_values('flight_date')
     for w in windows:
         df[f'{out_col}_w{w}'] = (
@@ -156,9 +183,7 @@ def add_rolling_target_rate(
     return df
 
 
-def add_rolling_mean_feature(
-    df: pd.DataFrame, group_cols: list[str], value_col: str, out_col: str, windows: tuple = (30,)
-) -> pd.DataFrame:
+def add_rolling_mean_feature(df: pd.DataFrame, group_cols: list[str], value_col: str, out_col: str, windows: tuple = (30,)) -> pd.DataFrame:
     df = df.copy().sort_values('flight_date')
     for w in windows:
         df[f'{out_col}_w{w}'] = (
@@ -169,9 +194,7 @@ def add_rolling_mean_feature(
     return df
 
 
-def add_rolling_rate_feature(
-    df: pd.DataFrame, group_cols: list[str], flag_col: str, out_col: str, windows: tuple = (90,)
-) -> pd.DataFrame:
+def add_rolling_rate_feature(df: pd.DataFrame, group_cols: list[str], flag_col: str, out_col: str, windows: tuple = (90,)) -> pd.DataFrame:
     return add_rolling_mean_feature(df, group_cols, flag_col, out_col, windows)
 
 
@@ -189,7 +212,9 @@ def build_flight_features(
     origin_ref = airports_df.rename(columns={'IATA_CODE': 'ORIGIN_AIRPORT', 'STATE': 'ORIGIN_STATE'})[['ORIGIN_AIRPORT', 'ORIGIN_STATE']]
     df = df.merge(origin_ref, on='ORIGIN_AIRPORT', how='left')
 
-    dest_ref = airports_df.rename(columns={'IATA_CODE': 'DESTINATION_AIRPORT', 'STATE': 'DEST_STATE'})[['DESTINATION_AIRPORT', 'DEST_STATE']]
+    dest_ref = airports_df.rename(columns={'IATA_CODE': 'DESTINATION_AIRPORT', 'STATE': 'DEST_STATE'})[
+        ['DESTINATION_AIRPORT', 'DEST_STATE']
+    ]
     df = df.merge(dest_ref, on='DESTINATION_AIRPORT', how='left')
 
     df = df[(df['CANCELLED'] == 0) & (df['DIVERTED'] == 0)].copy()
@@ -222,7 +247,9 @@ def build_flight_features(
         df = add_rolling_rate_feature(df, ['ORIGIN_AIRPORT'], 'flag_weather_delay', 'origin_weather_rate', windows=(90, 180))
         df = add_rolling_rate_feature(df, ['ORIGIN_AIRPORT'], 'flag_system_delay', 'origin_system_rate', windows=(90, 180))
         df = add_rolling_rate_feature(df, ['ORIGIN_AIRPORT'], 'flag_late_aircraft', 'origin_late_aircraft_rate', windows=(90, 180))
-        df = add_rolling_mean_feature(df, ['ORIGIN_AIRPORT', 'sched_dep_hour'], 'DEPARTURE_DELAY', 'origin_hour_dep_delay_mean', windows=(30,))
+        df = add_rolling_mean_feature(
+            df, ['ORIGIN_AIRPORT', 'sched_dep_hour'], 'DEPARTURE_DELAY', 'origin_hour_dep_delay_mean', windows=(30,)
+        )
         df = add_rolling_mean_feature(df, ['ROUTE'], 'DEPARTURE_DELAY', 'route_dep_delay_mean', windows=(30,))
         df = add_rolling_target_rate(df, ['ROUTE'], 'route_delayed_rate', windows=(30,))
 

@@ -64,22 +64,19 @@ def test_run_drift_report_returns_required_keys():
     import pandas as pd
 
     rng = np.random.default_rng(0)
-    cols = ['close', 'volume']
+    cols = ['DISTANCE', 'SCHEDULED_TIME']
     ref_df = pd.DataFrame({c: rng.normal(0, 1, 100) for c in cols})
     cur_df = pd.DataFrame({c: rng.normal(0, 1, 50) for c in cols})
 
     mock_run = MagicMock()
     mock_run.dict.return_value = {
         'metrics': [
-            {
-                'metric_name': 'DriftedColumnsCount',
-                'value': {'share': 0.05}
-            },
+            {'metric_name': 'DriftedColumnsCount', 'value': {'share': 0.05}},
             {
                 'metric_name': 'ValueDrift',
-                'config': {'column': 'close', 'threshold': 0.05},
-                'value': 0.5 # p-value > 0.05 means no drift
-            }
+                'config': {'column': 'DISTANCE', 'threshold': 0.05},
+                'value': 0.5,  # p-value > 0.05 means no drift
+            },
         ]
     }
     mock_report = MagicMock()
@@ -105,19 +102,12 @@ def test_run_drift_report_detects_drift_above_threshold():
     import pandas as pd
 
     rng = np.random.default_rng(1)
-    cols = ['close']
+    cols = ['DISTANCE']
     ref_df = pd.DataFrame({c: rng.normal(0, 1, 100) for c in cols})
     cur_df = pd.DataFrame({c: rng.normal(5, 1, 50) for c in cols})
 
     mock_run = MagicMock()
-    mock_run.dict.return_value = {
-        'metrics': [
-            {
-                'metric_name': 'DriftedColumnsCount',
-                'value': {'share': 0.15}
-            }
-        ]
-    }
+    mock_run.dict.return_value = {'metrics': [{'metric_name': 'DriftedColumnsCount', 'value': {'share': 0.15}}]}
     mock_report = MagicMock()
     mock_report.run.return_value = mock_run
 
@@ -131,8 +121,9 @@ def test_run_drift_report_detects_drift_above_threshold():
 
 
 def test_detect_and_log_drift_handles_missing_parquet(tmp_path):
-    import yaml
     from unittest.mock import patch
+
+    import yaml
 
     config = {
         'drift': {

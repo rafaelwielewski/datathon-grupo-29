@@ -8,12 +8,11 @@ from contextlib import asynccontextmanager
 from functools import lru_cache
 from typing import Callable
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from prometheus_client import make_asgi_app
 from pydantic import BaseModel, Field
-
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -23,7 +22,7 @@ from src.monitoring.metrics import (
     REQUEST_COUNT,
     REQUEST_LATENCY,
 )
-
+from src.security.guardrails import InputGuardrail, OutputGuardrail
 from src.serving.context import set_request_id
 from src.serving.logging_config import configure_logging
 
@@ -108,6 +107,10 @@ class QueryResponse(BaseModel):
     intermediate_steps: list | None = None
 
 
+_INPUT_GUARD = InputGuardrail(max_length=1000)
+_OUTPUT_GUARD = OutputGuardrail()
+
+
 @app.get('/health')
 def health() -> dict:
     return {'status': 'ok', 'model': 'CatBoost + Platt', 'agent': 'ReAct + gpt-4.1'}
@@ -123,9 +126,14 @@ def query(request: QueryRequest) -> QueryResponse:
     """Processa uma pergunta sobre atrasos de voo usando o agente ReAct."""
     from src.agent.react_agent import invoke_agent
 
+    validation = _INPUT_GUARD.validate(request.question)
+    if not validation.is_valid:
+        raise HTTPException(status_code=400, detail=validation.reason)
+
     agent = _get_agent()
     result = invoke_agent(agent, request.question)
-    return QueryResponse(answer=result['output'], intermediate_steps=result.get('intermediate_steps'))
+    safe_output = _OUTPUT_GUARD.sanitize(result['output'])
+    return QueryResponse(answer=safe_output, intermediate_steps=result.get('intermediate_steps'))
 
 
 @lru_cache(maxsize=1)

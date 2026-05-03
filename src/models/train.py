@@ -163,7 +163,11 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
         airports_df=airports_df,
         use_ops=use_ops,
     )
-    logger.info('Engineered shape: %s | delayed rate: %.4f', engineered.shape, engineered.get('delayed', engineered.get('DELAYED', pd.Series([0]))).mean())
+    logger.info(
+        'Engineered shape: %s | delayed rate: %.4f',
+        engineered.shape,
+        engineered.get('delayed', engineered.get('DELAYED', pd.Series([0]))).mean(),
+    )
 
     threshold_minutes = 15
     engineered['DELAYED'] = (engineered['ARRIVAL_DELAY'] >= threshold_minutes).astype(int)

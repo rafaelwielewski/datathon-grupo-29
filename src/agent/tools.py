@@ -29,11 +29,13 @@ def predict_flight_delay(
 
     try:
         result = predict(FlightParams(**params))
-        return json.dumps({
-            'delayed_probability': result.delayed_probability,
-            'delayed': result.delayed,
-            'threshold': result.threshold,
-        })
+        return json.dumps(
+            {
+                'delayed_probability': result.delayed_probability,
+                'delayed': result.delayed,
+                'threshold': result.threshold,
+            }
+        )
     except Exception as exc:
         return json.dumps({'error': f'Prediction error: {exc}'})
 

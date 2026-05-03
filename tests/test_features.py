@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -27,7 +26,7 @@ def test_base_feature_cols_has_expected_length():
 
 def test_cat_features_are_subset_of_base():
     for c in CAT_FEATURES:
-        assert c in BASE_FEATURE_COLS, f"{c} not in BASE_FEATURE_COLS"
+        assert c in BASE_FEATURE_COLS, f'{c} not in BASE_FEATURE_COLS'
 
 
 def test_add_time_features_extracts_hour_minute_period():
@@ -74,14 +73,15 @@ def test_add_congestion_creates_logvol_cols(raw_flight_df):
 def test_build_flight_features_has_all_base_cols(raw_flight_df, airlines_df, airports_df):
     result = build_flight_features(raw_flight_df, airlines_df, airports_df, use_ops=False)
     for col in BASE_FEATURE_COLS:
-        assert col in result.columns, f"Missing: {col}"
+        assert col in result.columns, f'Missing: {col}'
 
 
 def test_build_flight_features_with_ops_adds_ops_cols(raw_flight_df, airlines_df, airports_df):
     from src.features.feature_engineering import OPS_FEATURE_COLS
+
     result = build_flight_features(raw_flight_df, airlines_df, airports_df, use_ops=True)
     for col in OPS_FEATURE_COLS:
-        assert col in result.columns, f"Missing ops col: {col}"
+        assert col in result.columns, f'Missing ops col: {col}'
 
 
 def test_build_flight_features_has_delayed_target(raw_flight_df, airlines_df, airports_df):
@@ -99,10 +99,8 @@ def test_build_flight_features_filters_cancelled(raw_flight_df, airlines_df, air
 
 def test_build_flight_features_no_nan_in_numeric(raw_flight_df, airlines_df, airports_df):
     from src.features.feature_engineering import OPS_FEATURE_COLS
+
     result = build_flight_features(raw_flight_df, airlines_df, airports_df, use_ops=True)
-    num_cols = [
-        c for c in (BASE_FEATURE_COLS + OPS_FEATURE_COLS)
-        if c in result.columns and c not in CAT_FEATURES
-    ]
+    num_cols = [c for c in (BASE_FEATURE_COLS + OPS_FEATURE_COLS) if c in result.columns and c not in CAT_FEATURES]
     has_nan = result[num_cols].isnull().any()
-    assert not has_nan.any(), f"NaN in: {has_nan[has_nan].index.tolist()}"
+    assert not has_nan.any(), f'NaN in: {has_nan[has_nan].index.tolist()}'
