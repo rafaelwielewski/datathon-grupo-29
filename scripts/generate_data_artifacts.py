@@ -6,6 +6,7 @@ Produces:
   data/processed/artifacts/route_stats.json
   data/processed/sample/flights_sample.csv  (10k rows for local dev/testing)
 """
+
 from __future__ import annotations
 
 import csv
@@ -50,11 +51,11 @@ def generate_route_stats_and_sample() -> None:
         return
 
     from collections import defaultdict
+
     distances: dict[str, list[float]] = defaultdict(list)
     times: dict[str, list[float]] = defaultdict(list)
 
     random.seed(RANDOM_SEED)
-    sample_rows: list[dict] = []
     header: list[str] = []
 
     log.info('Reading flights.csv ...')

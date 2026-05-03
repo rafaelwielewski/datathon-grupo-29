@@ -1,8 +1,18 @@
 from __future__ import annotations
 
+import os
+
 import numpy as np
 import pandas as pd
 import pytest
+
+
+@pytest.fixture(autouse=True, scope='session')
+def mlflow_tmp_tracking(tmp_path_factory):
+    db = tmp_path_factory.mktemp('mlflow') / 'mlflow.db'
+    os.environ['MLFLOW_TRACKING_URI'] = f'sqlite:///{db}'
+    yield
+    os.environ.pop('MLFLOW_TRACKING_URI', None)
 
 
 @pytest.fixture
