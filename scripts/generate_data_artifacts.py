@@ -56,7 +56,6 @@ def generate_route_stats_and_sample() -> None:
     times: dict[str, list[float]] = defaultdict(list)
 
     random.seed(RANDOM_SEED)
-    sample_rows: list[dict] = []
     header: list[str] = []
 
     log.info('Reading flights.csv ...')
