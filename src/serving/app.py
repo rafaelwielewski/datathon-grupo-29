@@ -39,23 +39,24 @@ class LoggedRoute(APIRoute):
             start = time.perf_counter()
             ACTIVE_REQUESTS.inc()
             try:
-                body = await request.json()
-                logger.info('%s %s | req: %s', request.method, request.url.path, body)
-            except Exception:
-                logger.info('%s %s', request.method, request.url.path)
+                try:
+                    body = await request.json()
+                    logger.info('%s %s | req: %s', request.method, request.url.path, body)
+                except Exception:
+                    logger.info('%s %s', request.method, request.url.path)
 
-            response = await original(request)
-            elapsed = (time.perf_counter() - start) * 1000
+                response = await original(request)
+                elapsed = (time.perf_counter() - start) * 1000
 
-            try:
-                resp_data = json.loads(bytes(response.body).decode())
-                resp_log = resp_data.get('answer', resp_data) if isinstance(resp_data, dict) else resp_data
-            except Exception:
-                resp_log = bytes(response.body).decode(errors='replace')
+                try:
+                    resp_data = json.loads(bytes(response.body).decode())
+                    resp_log = resp_data.get('answer', resp_data) if isinstance(resp_data, dict) else resp_data
+                except Exception:
+                    resp_log = bytes(response.body).decode(errors='replace')
 
-            logger.info('%s %s %d (%.0fms) | resp: %s', request.method, request.url.path, response.status_code, elapsed, resp_log)
-            REQUEST_COUNT.labels(method=request.method, endpoint=request.url.path, status_code=str(response.status_code)).inc()
-            REQUEST_LATENCY.labels(method=request.method, endpoint=request.url.path).observe(elapsed / 1000)
+                logger.info('%s %s %d (%.0fms) | resp: %s', request.method, request.url.path, response.status_code, elapsed, resp_log)
+                REQUEST_COUNT.labels(method=request.method, endpoint=request.url.path, status_code=str(response.status_code)).inc()
+                REQUEST_LATENCY.labels(method=request.method, endpoint=request.url.path).observe(elapsed / 1000)
             except BaseException as exc:
                 elapsed = (time.perf_counter() - start) * 1000
                 logger.error('%s %s (%.0fms) | error: %s', request.method, request.url.path, elapsed, exc, exc_info=True)
@@ -88,7 +89,6 @@ app = FastAPI(
 )
 app.router.route_class = LoggedRoute
 
-# Prometheus metrics endpoint
 _metrics_app = make_asgi_app()
 app.mount('/metrics', _metrics_app)
 
@@ -110,13 +110,11 @@ class QueryResponse(BaseModel):
 
 @app.get('/health')
 def health() -> dict:
-    """Verifica se a API está operacional."""
-    return {'status': 'ok', 'model': 'CatBoost + Platt', 'agent': 'ReAct + gpt-4o-mini'}
+    return {'status': 'ok', 'model': 'CatBoost + Platt', 'agent': 'ReAct + gpt-4.1'}
 
 
 @app.get('/drift')
 def drift_report() -> dict:
-    """Detecta drift das features de voo entre splits de referência e atual."""
     return detect_and_log_drift()
 
 
@@ -126,18 +124,12 @@ def query(request: QueryRequest) -> QueryResponse:
     from src.agent.react_agent import invoke_agent
 
     agent = _get_agent()
-
     result = invoke_agent(agent, request.question)
-
-    answer = result['output']
-    steps = result.get('intermediate_steps')
-
-    return QueryResponse(answer=answer, intermediate_steps=steps)
+    return QueryResponse(answer=result['output'], intermediate_steps=result.get('intermediate_steps'))
 
 
 @lru_cache(maxsize=1)
 def _get_agent():
-    """Inicializa o agente uma única vez (singleton por processo)."""
     from src.agent.react_agent import build_agent_executor
 
     return build_agent_executor()

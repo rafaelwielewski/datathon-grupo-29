@@ -618,7 +618,7 @@ Pergunta: {input}
 
 def create_datathon_agent(
     tools: list[Tool],
-    model_name: str = "gpt-4o-mini",
+    model_name: str = "gpt-4.1",
     temperature: float = 0.0,
 ) -> AgentExecutor:
     """Cria agente ReAct para o Datathon.
@@ -886,7 +886,7 @@ Use este checklist como guia antes do Demo Day:
 - [x] `pyproject.toml` com todas as dependências
 
 ### Etapa 2 — LLM + Agente
-- [x] LLM servido via API (GitHub Models gpt-4o-mini, gratuito via Copilot)
+- [x] LLM servido via API (GitHub Models gpt-4.1, gratuito via Copilot)
 - [x] Agente ReAct funcional com ≥ 3 tools relevantes ao domínio
 - [x] RAG retornando contexto relevante dos dados fornecidos
 - [x] CI/CD pipeline funcional (GitHub Actions)

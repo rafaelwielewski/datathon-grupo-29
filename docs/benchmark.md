@@ -32,10 +32,10 @@ Ambiente: GitHub Models API (Azure), acesso via `GITHUB_TOKEN`. Inferência remo
 
 | Config | Modelo | Temperatura | RAG | Qualidade média | Recomendação |
 |---|---|---|---|---|---|
-| A | gpt-4o-mini | 0.0 | Não | 4.0/5 | Fallback sem RAG |
-| B | gpt-4o-mini | 0.0 | Sim | 5.0/5 | **Recomendado** |
+| A | gpt-4.1 | 0.0 | Não | 4.0/5 | Fallback sem RAG |
+| B | gpt-4.1 | 0.0 | Sim | 5.0/5 | **Recomendado** |
 
-**Configuração padrão:** B — `gpt-4o-mini` com RAG (FAISS + all-MiniLM-L6-v2) e temperatura 0.0.
+**Configuração padrão:** B — `gpt-4.1` com RAG (FAISS + all-MiniLM-L6-v2) e temperatura 0.0.
 
 ## Stack de Embeddings
 

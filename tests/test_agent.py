@@ -5,13 +5,13 @@ import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 
 # --- Tools ---
 
 
-def test_predict_flight_delay_returns_expected_keys(tmp_path: Path):
-    (tmp_path / 'best_threshold.txt').write_text('0.607')
-
+def test_predict_flight_delay_returns_expected_keys():
     payload = json.dumps(
         {
             'airline': 'AA',
@@ -27,40 +27,32 @@ def test_predict_flight_delay_returns_expected_keys(tmp_path: Path):
         }
     )
 
-    with (
-        patch('src.agent.tools.ARTIFACTS_DIR', tmp_path),
-        patch('src.agent.tools._run_model_pipeline', return_value=(0.45, 0.607)),
-    ):
+    with patch('src.models.predictor.run_prediction', return_value=(0.45, 0.607)):
         from src.agent.tools import predict_flight_delay
 
         result = json.loads(predict_flight_delay.invoke(payload))
 
     assert 'delayed' in result
-    assert 'probability' in result
-    assert 'confidence' in result
+    assert 'delayed_probability' in result
     assert 'threshold' in result
     assert isinstance(result['delayed'], bool)
-    assert 0.0 <= result['probability'] <= 1.0
+    assert 0.0 <= result['delayed_probability'] <= 1.0
 
 
 def test_predict_flight_delay_invalid_json_returns_error():
-    with patch('src.agent.tools.ARTIFACTS_DIR', Path('/tmp')):
-        from src.agent.tools import predict_flight_delay
+    from src.agent.tools import predict_flight_delay
 
-        result = json.loads(predict_flight_delay.invoke('not json'))
+    result = json.loads(predict_flight_delay.invoke('not json'))
     assert 'error' in result
 
 
-def test_predict_flight_delay_above_threshold_is_delayed(tmp_path: Path):
-    with (
-        patch('src.agent.tools.ARTIFACTS_DIR', tmp_path),
-        patch('src.agent.tools._run_model_pipeline', return_value=(0.80, 0.607)),
-    ):
+def test_predict_flight_delay_above_threshold_is_delayed():
+    with patch('src.models.predictor.run_prediction', return_value=(0.80, 0.607)):
         from src.agent.tools import predict_flight_delay
 
         result = json.loads(predict_flight_delay.invoke('{"airline":"AA","origin":"ATL","destination":"LAX"}'))
     assert result['delayed'] is True
-    assert result['confidence'] == 'high'
+    assert result['delayed_probability'] == pytest.approx(0.80)
 
 
 def test_get_airport_delay_stats_returns_data(tmp_path: Path):
@@ -180,7 +172,7 @@ def test_load_config_returns_expected_keys(tmp_path: Path):
     cfg_content = """
 llm:
   provider: github
-  model: gpt-4o-mini
+  model: gpt-4.1
   base_url: https://models.inference.ai.azure.com
   temperature: 0.0
   max_tokens: 2048
@@ -209,7 +201,7 @@ def test_build_llm_returns_chat_openai():
     cfg = {
         'llm': {
             'provider': 'github',
-            'model': 'gpt-4o-mini',
+            'model': 'gpt-4.1',
             'base_url': 'https://models.inference.ai.azure.com',
             'temperature': 0.0,
             'max_tokens': 512,
@@ -217,4 +209,4 @@ def test_build_llm_returns_chat_openai():
     }
     llm = build_llm(cfg)
     assert isinstance(llm, ChatOpenAI)
-    assert llm.model_name == 'gpt-4o-mini'
+    assert llm.model_name == 'gpt-4.1'
