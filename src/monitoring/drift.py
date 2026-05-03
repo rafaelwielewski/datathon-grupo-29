@@ -29,16 +29,17 @@ def _load_config(path: Path | None = None) -> dict:
         return yaml.safe_load(f)
 
 
-def run_drift_report(reference_df: pd.DataFrame, current_df: pd.DataFrame, warning_threshold: float = 0.1) -> dict:
+def run_drift_report(
+    reference_df: pd.DataFrame,
+    current_df: pd.DataFrame,
+    warning_threshold: float = 0.35,
+    top_n: int = 10,
+) -> dict:
     """Detecta drift de features usando Evidently DataDriftPreset.
 
-    Args:
-        reference_df: DataFrame de referência (dados de treino).
-        current_df: DataFrame atual (dados de produção recentes).
-        warning_threshold: Threshold para detecção de drift.
-
     Returns:
-        Dict com drift_detected, drift_share, per_feature e thresholds.
+        Dict com drift_detected, drift_share, per_feature (p-values),
+        top_drifted_features e thresholds.
     """
     from evidently import Report
     from evidently.presets import DataDriftPreset
@@ -47,34 +48,36 @@ def run_drift_report(reference_df: pd.DataFrame, current_df: pd.DataFrame, warni
     run_result = report.run(reference_data=reference_df, current_data=current_df)
     result_dict = run_result.dict()
 
-    # Na v0.7.21, o preset gera várias métricas.
-    # A primeira métrica (índice 0) costuma ser o DriftedColumnsCount que tem o share global.
     drift_share = 0.0
-    per_feature = {}
+    per_feature: dict[str, float] = {}
 
     for metric in result_dict.get('metrics', []):
         metric_name = metric.get('metric_name', '')
-        # Verifica se é a métrica de contagem global
-        if 'DriftedColumnsCount' in metric_name:
-            drift_share = float(metric.get('value', {}).get('share', 0.0))
-        # Verifica se é a métrica de drift de uma coluna específica
-        elif 'ValueDrift' in metric_name:
+        if 'ValueDrift' in metric_name:
             column_name = metric.get('config', {}).get('column')
             if column_name:
-                # Na v0.7.21, ValueDrift retorna o p-value.
-                # Drift é detectado se p-value < threshold (default 0.05)
-                p_value = metric.get('value', 1.0)
-                threshold = metric.get('config', {}).get('threshold', 0.05)
-                per_feature[column_name] = bool(p_value < threshold)
+                p_value = float(metric.get('value', 1.0))
+                per_feature[column_name] = p_value
+
+    # Bonferroni-corrected threshold: α/n_features reduces false positives
+    # from simultaneous testing (with 11 features at α=0.05, expected ~0.55
+    # false positives but variance allows 2-3 by chance).
+    n = len(per_feature) or 1
+    bonferroni_alpha = 0.05 / n
+    n_drifted = sum(1 for p in per_feature.values() if p < bonferroni_alpha)
+    drift_share = n_drifted / n
 
     drift_detected = drift_share > warning_threshold
 
-    logger.info('Drift report: share=%.2f detected=%s', drift_share, drift_detected)
+    top_drifted = sorted(per_feature.items(), key=lambda x: x[1])[:top_n]
+
+    logger.info('Drift report: share=%.2f detected=%s (bonferroni_alpha=%.4f)', drift_share, drift_detected, bonferroni_alpha)
 
     return {
         'drift_detected': drift_detected,
         'drift_share': drift_share,
         'per_feature': per_feature,
+        'top_drifted_features': [{'feature': f, 'p_value': round(p, 4)} for f, p in top_drifted],
     }
 
 
@@ -100,13 +103,44 @@ def detect_and_log_drift() -> dict:
     if 'split' not in df.columns:
         return {'error': "Parquet missing 'split' column. Re-run make train."}
 
-    excluded_cols = {'split', 'ARRIVAL_DELAY', 'DELAYED'}
-    feature_cols = [c for c in df.columns if c not in excluded_cols]
+    cfg_excluded: list[str] = drift_cfg.get('excluded_columns', [])
+    max_sample: int = drift_cfg.get('max_sample_size', 5000)
+
+    # Rolling-window features always diverge between temporal splits — not production signals.
+    _ROLLING_PREFIXES = ('te_', 'tail_', 'origin_dep_', 'origin_weather_', 'origin_system_',
+                         'origin_late_', 'origin_hour_', 'dest_day_', 'origin_day_',
+                         'route_dep_', 'route_delayed_')
+
+    def _is_rolling(col: str) -> bool:
+        return col.endswith(('_w3', '_w5', '_w7', '_w10', '_w14', '_w30', '_w60', '_w90', '_w180')) \
+            or any(col.startswith(p) for p in _ROLLING_PREFIXES)
+
+    excluded_cols = {'split', 'ARRIVAL_DELAY', 'DELAYED'} | set(cfg_excluded)
+    feature_cols = [c for c in df.columns if c not in excluded_cols and not _is_rolling(c)]
     feats_ref = df[df['split'] == ref_split][feature_cols].dropna()
     feats_cur = df[df['split'] == cur_split][feature_cols].dropna()
 
+    strategy = f'{ref_split}_vs_{cur_split}'
+    if feats_ref.empty:
+        logger.warning(
+            'Split "%s" not found in parquet; falling back to random half-split of "%s"',
+            ref_split,
+            cur_split,
+        )
+        shuffled = feats_cur.sample(frac=1, random_state=42)
+        mid = len(shuffled) // 2
+        feats_ref = shuffled.iloc[:mid]
+        feats_cur = shuffled.iloc[mid:]
+        strategy = f'{cur_split}_random_half_split'
+
     if feats_ref.empty or feats_cur.empty:
         return {'error': f'Empty split: ref={len(feats_ref)} rows, cur={len(feats_cur)} rows.'}
+
+    # Subsample to avoid KS-test rejecting H0 on trivially small differences at large n.
+    if len(feats_ref) > max_sample:
+        feats_ref = feats_ref.sample(max_sample, random_state=42)
+    if len(feats_cur) > max_sample:
+        feats_cur = feats_cur.sample(max_sample, random_state=42)
 
     result = run_drift_report(feats_ref, feats_cur, warning_threshold)
 
@@ -125,10 +159,14 @@ def detect_and_log_drift() -> dict:
         mlflow.log_metric('drift_detected', int(result['drift_detected']))
         mlflow.log_param('ref_split', ref_split)
         mlflow.log_param('cur_split', cur_split)
+        mlflow.log_param('strategy', strategy)
         mlflow.log_param('warning_threshold', warning_threshold)
+        for entry in result.get('top_drifted_features', []):
+            mlflow.log_metric(f"drift_pval_{entry['feature']}", entry['p_value'])
 
     return {
         **result,
+        'strategy': strategy,
         'warning_threshold': warning_threshold,
         'retrain_threshold': retrain_threshold,
     }

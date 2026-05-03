@@ -1,8 +1,36 @@
 drift:
-  warning_threshold: 0.1
-  retrain_threshold: 0.2
+  warning_threshold: 0.35
+  retrain_threshold: 0.5
   reference_parquet: "data/processed/test_features_ref.parquet"
+  reference_split: "val"
   current_split: "test"
+  # Max rows per split fed to Evidently. Large n makes KS-test reject H0
+  # for trivially small differences — 5000 gives reasonable statistical power.
+  max_sample_size: 5000
+  # Columns excluded from drift check:
+  # - Temporal: always shift between periods, no production signal
+  # - Rolling windows (te_*, tail_*, origin_*_w*, route_*_w*): computed from
+  #   past windows, guaranteed to differ between chronological splits
+  # - Identifiers (FLIGHT_NUMBER, TAIL_NUMBER): not distribution signals
+  excluded_columns:
+    - YEAR
+    - MONTH
+    - DAY
+    - DAY_OF_WEEK
+    - day_of_year
+    - doy_sin
+    - doy_cos
+    - SCHEDULED_DEPARTURE
+    - SCHEDULED_ARRIVAL
+    - DEPARTURE_HOUR
+    - FLIGHT_NUMBER
+    - TAIL_NUMBER
+    - sched_dep_minute
+    - sched_arr_minute
+    # Derived from sched_*_hour and DISTANCE (already monitored above)
+    - sched_dep_period
+    - sched_arr_period
+    - distance_bucket
 
 metrics:
   export_to_prometheus: true

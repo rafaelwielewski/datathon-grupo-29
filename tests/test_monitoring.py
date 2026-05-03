@@ -107,7 +107,13 @@ def test_run_drift_report_detects_drift_above_threshold():
     cur_df = pd.DataFrame({c: rng.normal(5, 1, 50) for c in cols})
 
     mock_run = MagicMock()
-    mock_run.dict.return_value = {'metrics': [{'metric_name': 'DriftedColumnsCount', 'value': {'share': 0.15}}]}
+    # 2 features, both with p-value well below Bonferroni alpha (0.05/2=0.025)
+    mock_run.dict.return_value = {
+        'metrics': [
+            {'metric_name': 'ValueDrift', 'config': {'column': 'DISTANCE'}, 'value': 0.001},
+            {'metric_name': 'ValueDrift', 'config': {'column': 'SCHEDULED_TIME'}, 'value': 0.002},
+        ]
+    }
     mock_report = MagicMock()
     mock_report.run.return_value = mock_run
 
@@ -117,7 +123,7 @@ def test_run_drift_report_detects_drift_above_threshold():
         result = run_drift_report(ref_df, cur_df, warning_threshold=0.1)
 
     assert result['drift_detected'] is True
-    assert result['drift_share'] == 0.15
+    assert result['drift_share'] == 1.0  # 2/2 features drifted
 
 
 def test_detect_and_log_drift_handles_missing_parquet(tmp_path):
