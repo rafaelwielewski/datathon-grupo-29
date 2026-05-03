@@ -19,7 +19,7 @@ from starlette.responses import Response
 from src.monitoring.drift import detect_and_log_drift
 from src.monitoring.metrics import (
     ACTIVE_REQUESTS,
-    MODEL_PREDICTION_DIRECTION,
+    FLIGHT_PREDICTION,
     REQUEST_COUNT,
     REQUEST_LATENCY,
 )
@@ -45,7 +45,7 @@ class LoggedRoute(APIRoute):
                 except Exception:
                     logger.info('%s %s', request.method, request.url.path)
 
-                response: Response = await original(request)
+                response = await original(request)
                 elapsed = (time.perf_counter() - start) * 1000
 
                 try:
@@ -82,14 +82,13 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(
-    title='AAPL Financial Assistant',
-    description='Agente ReAct para análise de ações AAPL com previsão LSTM D+5.',
+    title='Flight Delay Prediction Assistant',
+    description='Agente ReAct para previsão de atrasos de voos com CatBoost + Platt calibration.',
     version='1.0.0',
     lifespan=lifespan,
 )
 app.router.route_class = LoggedRoute
 
-# Prometheus metrics endpoint
 _metrics_app = make_asgi_app()
 app.mount('/metrics', _metrics_app)
 
@@ -109,33 +108,23 @@ class QueryResponse(BaseModel):
     intermediate_steps: list | None = None
 
 
-@lru_cache(maxsize=1)
-def _get_agent():
-    """Inicializa o agente uma única vez (singleton por processo)."""
-    from src.agent.react_agent import build_agent_executor
-
-    return build_agent_executor()
-
-
 _INPUT_GUARD = InputGuardrail(max_length=1000)
 _OUTPUT_GUARD = OutputGuardrail()
 
 
 @app.get('/health')
 def health() -> dict:
-    """Verifica se a API está operacional."""
-    return {'status': 'ok', 'model': 'LSTM ONNX D+5', 'agent': 'ReAct + gpt-4o-mini'}
+    return {'status': 'ok', 'model': 'CatBoost + Platt', 'agent': 'ReAct + gpt-4.1'}
 
 
 @app.get('/drift')
 def drift_report() -> dict:
-    """Detecta drift das features AAPL vs janela de referência histórica."""
     return detect_and_log_drift()
 
 
-@app.post('/query', response_model=QueryResponse)
+@app.post('/query')
 def query(request: QueryRequest) -> QueryResponse:
-    """Processa uma pergunta sobre AAPL usando o agente ReAct."""
+    """Processa uma pergunta sobre atrasos de voo usando o agente ReAct."""
     from src.agent.react_agent import invoke_agent
 
     validation = _INPUT_GUARD.validate(request.question)
@@ -144,16 +133,16 @@ def query(request: QueryRequest) -> QueryResponse:
 
     agent = _get_agent()
     result = invoke_agent(agent, request.question)
-
     safe_output = _OUTPUT_GUARD.sanitize(result['output'])
+    raw_steps = result.get('intermediate_steps') or []
+    safe_steps = [{'role': s['role'], 'content': _OUTPUT_GUARD.sanitize(s['content'])} for s in raw_steps]
+    delayed_label = 'delayed' if 'delayed: true' in safe_output.lower() or 'atrasado' in safe_output.lower() else 'on_time'
+    FLIGHT_PREDICTION.labels(prediction=delayed_label).inc()
+    return QueryResponse(answer=safe_output, intermediate_steps=safe_steps)
 
-    answer = safe_output.lower()
-    if 'cair' in answer or 'queda' in answer or 'down' in answer or 'baixa' in answer:
-        MODEL_PREDICTION_DIRECTION.labels(direction='DOWN').inc()
-    elif 'subir' in answer or 'alta' in answer or 'up' in answer or 'crescimento' in answer:
-        MODEL_PREDICTION_DIRECTION.labels(direction='UP').inc()
 
-    return QueryResponse(
-        answer=safe_output,
-        intermediate_steps=None,
-    )
+@lru_cache(maxsize=1)
+def _get_agent():
+    from src.agent.react_agent import build_agent_executor
+
+    return build_agent_executor()

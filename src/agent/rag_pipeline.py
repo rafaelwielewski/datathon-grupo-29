@@ -52,10 +52,9 @@ def build_rag_tool(cfg: dict):
     retriever = build_retriever(cfg)
     return create_retriever_tool(
         retriever,
-        name='search_financial_knowledge',
+        name='search_flight_knowledge',
         description=(
-            'Searches the AAPL financial knowledge base. Use this tool to find context about: '
-            'AAPL company profile, technical indicator interpretation, risk management guidelines, '
-            'model limitations, and position sizing rules.'
+            'Searches the flight delay knowledge base for information about airports, '
+            'airlines, weather patterns, and operational factors that affect flight punctuality.'
         ),
     )

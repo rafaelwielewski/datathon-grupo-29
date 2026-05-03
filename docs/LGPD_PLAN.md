@@ -1,19 +1,19 @@
 # LGPD Plan - Datathon Fase 05 (Grupo 29)
 
 ## 1. Escopo
-- Caso: previsao de preco AAPL (dados financeiros publicos).
+- Caso: previsao de atrasos de voos domesticos dos EUA (dados operacionais publicos).
 - Dados pessoais: nao coletamos dados pessoais de usuarios finais.
 - Possivel PII: entradas livres do usuario podem conter PII; saidas do LLM podem reproduzir PII.
 
 ## 2. Base legal e finalidade
 - Base legal: legitimo interesse para demonstracao academica e pesquisa aplicada.
-- Finalidade: analise tecnica e previsao de preco; suporte a decisao.
-- Minimizacao: apenas dados de mercado e textos publicos do KB.
+- Finalidade: predicao de atrasos de voos e suporte a decisao de viagem.
+- Minimizacao: apenas dados operacionais de voos publicos e textos do KB.
 
 ## 3. Inventario de dados
 | Categoria | Origem | Retencao | Sensibilidade | Controles |
 |---|---|---|---|---|
-| OHLCV AAPL | Yahoo Finance (yfinance) | 24 meses | Publico | Versionamento DVC, acesso local |
+| Voos domesticos EUA 2015 | Bureau of Transportation Statistics | Duracao do projeto | Publico | Versionamento DVC, acesso local |
 | Knowledge base | docs/ e data/knowledge_base | Enquanto durar o projeto | Baixa | Revisao manual, sem PII |
 | Logs de API | FastAPI | 30 dias | Baixa | Rotacao de logs, sem payload completo |
 

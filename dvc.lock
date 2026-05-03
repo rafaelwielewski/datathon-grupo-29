@@ -5,42 +5,54 @@ stages:
     deps:
     - path: configs/model_config.yaml
       hash: md5
-      md5: 71e73343a1d430ef8e4956cb0c617d28
-      size: 548
+      md5: de13ba54990f3ce3cac4e09ba06c75f5
+      size: 891
+    - path: data/raw/airlines.csv
+      hash: md5
+      md5: 7b5d753256599a82b9a98cc441421af0
+      size: 359
+    - path: data/raw/airports.csv
+      hash: md5
+      md5: 6e638ecd2b3b60efaa9af491d1f2f302
+      size: 23867
+    - path: data/raw/flights.csv
+      hash: md5
+      md5: 216daf0a023565d9ffca8ddc10aad802
+      size: 592406591
     - path: src/features/feature_engineering.py
       hash: md5
-      md5: cabd6e4a76cf34c500e6941bc0909023
-      size: 3088
+      md5: 1fed736d8bbad10328cba0d5dcc2c470
+      size: 9590
     - path: src/models/baseline.py
       hash: md5
-      md5: 01c49dddeb3c243bf2dae555020e0e2a
-      size: 3420
+      md5: e7b93abb8be01a4009d8181f91f9970d
+      size: 2380
     - path: src/models/train.py
       hash: md5
-      md5: 5886e581554073d39df586b35be809fd
-      size: 9393
+      md5: 2f3ef1c73acf77925a26c614d620ba7a
+      size: 12500
     outs:
-    - path: data/processed/artifacts/final_model.keras
+    - path: data/processed/artifacts/best_threshold.txt
       hash: md5
-      md5: 73cf2153028f96732270b55093107924
-      size: 446403
-    - path: data/processed/artifacts/final_model.onnx
+      md5: 52cc3fd912182d01272313f5ed399f90
+      size: 8
+    - path: data/processed/artifacts/catboost_model.cbm
       hash: md5
-      md5: 4627ebde95cc3e44203b1faaa488afaa
-      size: 163139
+      md5: 2f493c8e90753bff798a42097bd4b96d
+      size: 226151556
     - path: data/processed/artifacts/metadata.json
       hash: md5
-      md5: f53e2d2b18feadae277f9622f31b7fa1
-      size: 540
+      md5: e6b237cfebcdcb657ed246ad7c000842
+      size: 2129
     - path: data/processed/artifacts/metrics.json
       hash: md5
-      md5: 764583cc415bddb548e3ee5aac2ac37f
-      size: 478
-    - path: data/processed/artifacts/scaler_X.joblib
+      md5: 26ee168c396b409556aea83d8a7cedb5
+      size: 186
+    - path: data/processed/artifacts/platt_calibrator.joblib
       hash: md5
-      md5: 1e6c4929bf02802670f9e4fe292b148d
-      size: 759
-    - path: data/processed/artifacts/scaler_y.joblib
+      md5: 257c11a59cf8968b7e8e923ab93b7c12
+      size: 879
+    - path: data/processed/test_features_ref.parquet
       hash: md5
-      md5: bb1bc56bd7bdcc3299927972fe33a256
-      size: 511
+      md5: 4ac0087dd4f9c6e32e8d705be91999fe
+      size: 108377900

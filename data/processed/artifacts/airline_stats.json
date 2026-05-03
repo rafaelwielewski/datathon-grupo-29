@@ -1,0 +1,86 @@
+{
+  "AA": {
+    "delay_rate": 0.2046,
+    "avg_delay_minutes": 5.44,
+    "total_flights": 171694,
+    "name": "American Airlines Inc."
+  },
+  "AS": {
+    "delay_rate": 0.1341,
+    "avg_delay_minutes": -0.31,
+    "total_flights": 47589,
+    "name": "Alaska Airlines Inc."
+  },
+  "B6": {
+    "delay_rate": 0.2359,
+    "avg_delay_minutes": 7.3,
+    "total_flights": 72750,
+    "name": "JetBlue Airways"
+  },
+  "DL": {
+    "delay_rate": 0.1496,
+    "avg_delay_minutes": 1.52,
+    "total_flights": 241016,
+    "name": "Delta Air Lines Inc."
+  },
+  "EV": {
+    "delay_rate": 0.2142,
+    "avg_delay_minutes": 8.16,
+    "total_flights": 159553,
+    "name": "Atlantic Southeast Airlines"
+  },
+  "F9": {
+    "delay_rate": 0.2995,
+    "avg_delay_minutes": 16.75,
+    "total_flights": 24255,
+    "name": "Frontier Airlines Inc."
+  },
+  "HA": {
+    "delay_rate": 0.1279,
+    "avg_delay_minutes": 3.1,
+    "total_flights": 21471,
+    "name": "Hawaiian Airlines Inc."
+  },
+  "MQ": {
+    "delay_rate": 0.2548,
+    "avg_delay_minutes": 9.97,
+    "total_flights": 82570,
+    "name": "American Eagle Airlines Inc."
+  },
+  "NK": {
+    "delay_rate": 0.3207,
+    "avg_delay_minutes": 17.26,
+    "total_flights": 30918,
+    "name": "Spirit Air Lines"
+  },
+  "OO": {
+    "delay_rate": 0.1952,
+    "avg_delay_minutes": 6.51,
+    "total_flights": 162348,
+    "name": "Skywest Airlines Inc."
+  },
+  "UA": {
+    "delay_rate": 0.2327,
+    "avg_delay_minutes": 7.67,
+    "total_flights": 140110,
+    "name": "United Air Lines Inc."
+  },
+  "US": {
+    "delay_rate": 0.1902,
+    "avg_delay_minutes": 3.75,
+    "total_flights": 82872,
+    "name": "US Airways Inc."
+  },
+  "VX": {
+    "delay_rate": 0.1988,
+    "avg_delay_minutes": 5.07,
+    "total_flights": 16637,
+    "name": "Virgin America"
+  },
+  "WN": {
+    "delay_rate": 0.2073,
+    "avg_delay_minutes": 5.7,
+    "total_flights": 346217,
+    "name": "Southwest Airlines Co."
+  }
+}

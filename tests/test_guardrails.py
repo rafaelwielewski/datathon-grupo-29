@@ -17,7 +17,7 @@ def test_input_guardrail_rejects_too_long():
 
 def test_input_guardrail_allows_normal_question():
     guard = InputGuardrail(max_length=1000)
-    result = guard.validate('Qual a previsao para AAPL?')
+    result = guard.validate('Qual a probabilidade de atraso do voo AA123 de ATL para LAX?')
     assert result.is_valid is True
 
 

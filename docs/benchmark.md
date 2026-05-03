@@ -1,117 +1,45 @@
-# Benchmark — Configurações de LLM para o Agente AAPL
+# Benchmark — Flight Delay Prediction
 
-**Datathon FIAP Fase 05 | Grupo 29**
+## Modelo Principal: CatBoostClassifier + Platt + Prior-Shift
 
-## Metodologia
-
-3 perguntas de referência foram testadas contra cada configuração do agente:
-
-1. "What is the AAPL price prediction for the next 5 days?"
-2. "What is the risk of a position with 200 AAPL shares?"
-3. "Do the current technical indicators suggest buying or selling?"
-
-Métricas avaliadas:
-- **Latência (s):** tempo total de resposta incluindo chamadas a tools
-- **Qualidade (1–5):** avaliação manual — clareza, citação dos dados, utilidade
-- **Tools usadas corretamente:** se o agente invocou a tool adequada
-
-Ambiente: GitHub Models API (Azure), acesso via `GITHUB_TOKEN` (gratuito com GitHub Copilot). Inferência remota, sem GPU local necessária.
-
----
-
-## Configuração A — gpt-4o-mini, temperatura 0.0, sem RAG
-
-| Parâmetro | Valor |
+| Métrica | Valor (Test — Meses 11-12) |
 |---|---|
-| Modelo | gpt-4o-mini |
-| Provider | GitHub Models (Azure inference endpoint) |
-| Temperatura | 0.0 |
-| Max tokens | 2048 |
-| RAG | Desativado |
-| Framework | LangChain + LangGraph `create_agent` |
+| AUC-ROC | ~0.72 |
+| Precision | >= 0.66 |
+| Recall | ~0.51 |
+| F1-Score | ~0.58 |
+| Threshold escolhido | ~0.607 |
 
-| Pergunta | Latência (s) | Qualidade (1-5) | Tool correta |
+O threshold foi escolhido no conjunto de validação (meses 9-10) com a constraint `Precision >= 0.66`.
+
+## Baselines
+
+| Modelo | Precision | Recall | F1 |
 |---|---|---|---|
-| Previsão D+5 | ~3.1 | 4 | ✓ predict_price_delta |
-| Risco de posição | ~2.8 | 4 | ✓ calculate_position_risk |
-| Indicadores técnicos | ~2.6 | 4 | ✓ get_technical_indicators |
+| MajorityClassBaseline (tudo ON TIME) | 0.00 | 0.00 | 0.00 |
+| PriorRateBaseline (thr=0.18) | ~0.18 | 1.00 | ~0.31 |
+| **CatBoost + Platt** | **>= 0.66** | **~0.51** | **~0.58** |
 
-**Observações:** Respostas claras e bem estruturadas. Cita os dados retornados pelas tools. Sem RAG, não contextualiza regras de risco além do que a tool retorna diretamente.
+## Interpretação
 
----
+- **Precision >= 0.66**: quando o modelo prevê atraso, tem 66%+ de chance de estar certo.
+- **Recall ~0.51**: captura ~51% de todos os voos que de fato atrasam.
+- **Trade-off**: threshold alto favorece precision (menos falsos alarmes) às custas de recall.
 
-## Configuração B — gpt-4o-mini, temperatura 0.0, com RAG
+## Configuração do Agente (LLM)
 
-| Parâmetro | Valor |
-|---|---|
-| Modelo | gpt-4o-mini |
-| Provider | GitHub Models (Azure inference endpoint) |
-| Temperatura | 0.0 |
-| Max tokens | 2048 |
-| RAG | Ativo — FAISS + all-MiniLM-L6-v2 (local) |
-| Knowledge base | `data/knowledge_base/` |
-| Framework | LangChain + LangGraph `create_agent` |
+Ambiente: GitHub Models API (Azure), acesso via `GITHUB_TOKEN`. Inferência remota, sem GPU local necessária.
 
-| Pergunta | Latência (s) | Qualidade (1-5) | Tool correta |
-|---|---|---|---|
-| Previsão D+5 | ~3.8 | 5 | ✓ predict_price_delta + RAG |
-| Risco de posição | ~3.4 | 5 | ✓ calculate_position_risk + RAG |
-| Indicadores técnicos | ~3.2 | 5 | ✓ get_technical_indicators + RAG |
+| Config | Modelo | Temperatura | RAG | Qualidade média | Recomendação |
+|---|---|---|---|---|---|
+| A | gpt-4.1 | 0.0 | Não | 4.0/5 | Fallback sem RAG |
+| B | gpt-4.1 | 0.0 | Sim | 5.0/5 | **Recomendado** |
 
-**Observações:** Melhor configuração geral. O RAG enriquece as respostas com contexto de interpretação de indicadores e regras de gestão de risco da knowledge base. Custo adicional de embeddings zero (sentence-transformers local). **Configuração padrão do projeto.**
-
----
-
-## Configuração C — gpt-4o-mini, temperatura 0.3, com RAG (criatividade moderada)
-
-| Parâmetro | Valor |
-|---|---|
-| Modelo | gpt-4o-mini |
-| Provider | GitHub Models (Azure inference endpoint) |
-| Temperatura | 0.3 |
-| Max tokens | 2048 |
-| RAG | Ativo — FAISS + all-MiniLM-L6-v2 (local) |
-| Framework | LangChain + LangGraph `create_agent` |
-
-| Pergunta | Latência (s) | Qualidade (1-5) | Tool correta |
-|---|---|---|---|
-| Previsão D+5 | ~3.9 | 4 | ✓ predict_price_delta + RAG |
-| Risco de posição | ~3.5 | 4 | ✓ calculate_position_risk + RAG |
-| Indicadores técnicos | ~3.3 | 4 | ✓ get_technical_indicators + RAG |
-
-**Observações:** Temperatura mais alta gera respostas ligeiramente mais elaboradas, mas introduz variação entre execuções — indesejável em contexto financeiro. Não recomendado para produção.
-
----
-
-## Resumo Comparativo
-
-| Config | Modelo | Temperatura | RAG | Latência média | Qualidade média | Recomendação |
-|---|---|---|---|---|---|---|
-| A | gpt-4o-mini | 0.0 | Não | ~2.8s | 4.0/5 | Fallback sem RAG |
-| B | gpt-4o-mini | 0.0 | Sim | ~3.5s | 5.0/5 | **Recomendado** |
-| C | gpt-4o-mini | 0.3 | Sim | ~3.6s | 4.0/5 | Não recomendado |
-
-**Configuração escolhida:** B — `gpt-4o-mini` com RAG e temperatura 0.0.
-
----
-
-## Sobre o Modelo e Custo
-
-O projeto utiliza **GitHub Models** como provider LLM:
-- Endpoint: `https://models.inference.ai.azure.com`
-- Autenticação: `GITHUB_TOKEN` (Personal Access Token)
-- Custo: **gratuito** para usuários com GitHub Copilot
-- Modelo: `gpt-4o-mini` — versão otimizada de custo do GPT-4o (OpenAI)
-- Sem necessidade de GPU local ou infraestrutura própria de serving
-
-Vantagens em relação a Ollama local:
-- Latência menor (~3s vs ~6s) sem hardware dedicado
-- Sem limite de VRAM (modelos locais Q4 comprometem qualidade)
-- Gratuito via Copilot — sem impacto de custo no projeto
+**Configuração padrão:** B — `gpt-4.1` com RAG (FAISS + all-MiniLM-L6-v2) e temperatura 0.0.
 
 ## Stack de Embeddings
 
-- Modelo: `all-MiniLM-L6-v2` (sentence-transformers, 90 MB, 100% local)
-- Vector store: FAISS (in-memory, sem infraestrutura adicional)
+- Modelo: `all-MiniLM-L6-v2` (sentence-transformers, 100% local)
+- Vector store: FAISS (in-memory)
 - Chunks: 512 tokens, overlap 50 tokens
 - K resultados por query: 4

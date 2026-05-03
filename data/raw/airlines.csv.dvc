@@ -1,0 +1,5 @@
+outs:
+- md5: 7b5d753256599a82b9a98cc441421af0
+  size: 359
+  hash: md5
+  path: airlines.csv

@@ -1,182 +1,182 @@
 [
   {
-    "query": "What is the AAPL price prediction for the next 5 days?",
-    "expected_answer": "The LSTM model predicts the AAPL closing price 5 trading days ahead based on 60 days of historical data and technical indicators.",
+    "query": "What is the probability that flight AA123 from ATL to LAX will be delayed tomorrow morning?",
+    "expected_answer": "Use predict_flight_delay with airline=AA, origin=ATL, destination=LAX to get the delay probability. The model uses CatBoost with Platt calibration.",
     "contexts": [
-      "The LSTM model predicts D+5 closing price delta using 60-day lookback window.",
-      "Prediction uses features: RSI-14, MACD, SMA-7, SMA-21, EMA-12, EMA-26, volatility.",
-      "The model outputs predicted_delta_d5_usd added to current_price_usd."
+      "The CatBoost model predicts binary flight delay (arrival >= 15 minutes late).",
+      "predict_flight_delay requires: airline, origin, destination, month, day, day_of_week, scheduled_departure, scheduled_arrival, distance, scheduled_time.",
+      "The model outputs delayed (bool), delayed_probability (float), and threshold (float)."
     ]
   },
   {
-    "query": "Is AAPL overbought or oversold right now?",
-    "expected_answer": "RSI above 70 indicates overbought, below 30 oversold, between 30-70 is neutral.",
+    "query": "Which airport has the highest historical delay rate?",
+    "expected_answer": "Use get_airport_delay_stats for the airports of interest. O'Hare (ORD) and SFO typically have the highest rates (~24-25%).",
     "contexts": [
-      "RSI-14 above 70 signals overbought territory.",
-      "RSI-14 below 30 signals oversold territory.",
-      "MACD crossover: bullish when MACD line crosses above signal line."
+      "get_airport_delay_stats returns delay_rate, avg_delay_minutes, and total_flights for a given IATA code.",
+      "ORD (Chicago O'Hare) has high delays due to severe weather and traffic congestion.",
+      "SFO (San Francisco) experiences frequent fog-related delays."
     ]
   },
   {
-    "query": "What is the risk for a position of 100 AAPL shares?",
-    "expected_answer": "Risk is calculated from MAE and RMSE of the LSTM model. LOW risk for positions under 100 shares.",
+    "query": "Is Delta Airlines more reliable than Spirit Airlines?",
+    "expected_answer": "Delta (DL) has a delay rate around 17%, while Spirit (NK) is around 26%. Use get_airline_delay_stats to confirm with latest data.",
     "contexts": [
-      "Risk level: LOW for position_size <= 100, MEDIUM for <= 500, HIGH above 500.",
-      "VaR 95% = RMSE * 2 per share. VaR 99% = RMSE * 3 per share.",
-      "requires_human_review is True when position_size > 500."
+      "get_airline_delay_stats returns delay_rate, avg_delay_minutes, total_flights, and name.",
+      "Delta Air Lines is consistently among the top-performing US carriers for on-time performance.",
+      "Spirit Airlines operates with tight schedules, leading to higher delay rates."
     ]
   },
   {
-    "query": "What is the current AAPL trend based on moving averages?",
-    "expected_answer": "The trend is determined by comparing SMA-7 to SMA-21. UP when SMA-7 > SMA-21, DOWN otherwise.",
+    "query": "What time of day has the fewest flight delays?",
+    "expected_answer": "Early morning flights (5-8 AM, HHMM 500-800) have the lowest delay rates (~12%) because aircraft start fresh with no accumulated cascade delays.",
     "contexts": [
-      "SMA-7 above SMA-21 indicates short-term uptrend.",
-      "SMA-7 below SMA-21 indicates short-term downtrend.",
-      "EMA-12 and EMA-26 are used for MACD calculation."
+      "Early morning flights (5-8 AM) have ~12% delay rate — aircraft start fresh.",
+      "Evening flights (after 6 PM) accumulate cascade delays throughout the day, reaching 28-35%.",
+      "The sched_dep_period feature categorizes departures: morning (5-11), afternoon (12-17), evening (18-22), night."
     ]
   },
   {
-    "query": "How reliable is the AAPL price prediction model?",
-    "expected_answer": "Model reliability is measured by MAE, RMSE, MAPE and directional accuracy on the test set.",
+    "query": "Will a flight from ORD to JFK on a Monday in July likely be delayed?",
+    "expected_answer": "Use predict_flight_delay with origin=ORD, destination=JFK, month=7, day_of_week=1. ORD has ~25% historical delay rate and July is peak storm season.",
     "contexts": [
-      "Directional accuracy measures how often the model correctly predicts price direction.",
-      "MAPE measures percentage error relative to true price.",
-      "MAE measures average absolute error in USD."
+      "O'Hare (ORD) has one of the highest delay rates (~25%) among major US airports.",
+      "July is peak summer thunderstorm season — delays peak in June-July.",
+      "ORD to JFK is a high-congestion route prone to NAS delays."
     ]
   },
   {
-    "query": "Should I buy AAPL stock based on current technical indicators?",
-    "expected_answer": "The agent provides technical analysis data but does not give financial advice. Consult a financial advisor.",
+    "query": "What factors does the model use to predict delays?",
+    "expected_answer": "The CatBoost model uses airline, origin/destination airports, route, distance, scheduled times, day of week, month, historical delay rates (rolling 7/30-day), and congestion features.",
     "contexts": [
-      "This assistant provides market data and model predictions for informational purposes only.",
-      "MACD bullish crossover and RSI neutral suggest positive momentum.",
-      "Investment decisions should consider multiple factors beyond technical indicators."
+      "BASE_FEATURE_COLS includes: AIRLINE, ORIGIN_AIRPORT, DESTINATION_AIRPORT, ROUTE, DISTANCE, SCHEDULED_TIME, sched_dep_hour, sched_dep_period, is_weekend, day_of_year, doy_sin, doy_cos, rolling target encoding features.",
+      "OPS_FEATURE_COLS adds historical operational signals: tail cascade delays, origin departure delay history, weather/system/late-aircraft rates.",
+      "TRAIN_PRIOR=0.18 fills missing historical features at inference time."
     ]
   },
   {
-    "query": "What is the MACD signal for AAPL?",
-    "expected_answer": "MACD is calculated as EMA-12 minus EMA-26. Bullish when MACD line is above signal line (EMA-9 of MACD).",
+    "query": "How accurate is the flight delay model?",
+    "expected_answer": "The CatBoost model achieves ~72% AUC with precision >= 66% at the chosen threshold (~0.607) on the test set (months 11-12).",
     "contexts": [
-      "MACD = EMA-12 - EMA-26.",
-      "MACD signal line = EMA-9 of MACD.",
-      "BULLISH crossover when MACD > signal line, BEARISH when MACD < signal line."
+      "CatBoost binary classifier trained on months 1-8, validated on 9-10, tested on 11-12.",
+      "Threshold optimized for precision >= 66% on the validation set.",
+      "Platt calibration applied to raw CatBoost probabilities before thresholding."
     ]
   },
   {
-    "query": "What is the volatility of AAPL over the last 21 days?",
-    "expected_answer": "21-day volatility is the standard deviation of daily returns over the past 21 trading days.",
+    "query": "Does Alaska Airlines have fewer delays than American Airlines?",
+    "expected_answer": "Yes, Alaska Airlines (AS) typically has a delay rate around 15%, compared to American Airlines (AA) at ~20%. Use get_airline_delay_stats to confirm.",
     "contexts": [
-      "vol_21 is computed as rolling 21-day std of daily percentage returns.",
-      "Higher volatility increases prediction uncertainty.",
-      "Volatility is one of the 16 features used by the LSTM model."
+      "Alaska Airlines consistently ranks among the most on-time US carriers.",
+      "American Airlines delay rate is typically around 20%.",
+      "get_airline_delay_stats returns real statistics computed from the training dataset."
     ]
   },
   {
-    "query": "How many features does the LSTM model use?",
-    "expected_answer": "The LSTM model uses 16 technical features including price, returns, SMAs, EMAs, MACD, RSI, and volatility.",
+    "query": "What is the delay rate for flights departing from LAX?",
+    "expected_answer": "Use get_airport_delay_stats with airport_code=LAX. LAX historically has around a 19% delay rate.",
     "contexts": [
-      "Feature set: close, high, low, open, volume, ret_1, log_ret_1, sma_7, sma_21, ema_12, ema_26, macd, macd_signal, rsi_14, vol_7, vol_21.",
-      "The model uses a 60-day lookback window to create sequences.",
-      "Target variable is y_delta_h = close(t+5) - close(t)."
+      "Los Angeles (LAX) has approximately 19% delay rate with avg delay ~6 minutes.",
+      "LAX delays are often caused by high traffic volume and occasional marine fog.",
+      "get_airport_delay_stats returns delay_rate, avg_delay_minutes, total_flights, top_delay_hours."
     ]
   },
   {
-    "query": "What is the lookback window used by the prediction model?",
-    "expected_answer": "The LSTM model uses a 60-day lookback window, meaning it analyzes 60 trading days of history to make each prediction.",
+    "query": "How does the model handle flights where historical data is missing?",
+    "expected_answer": "Missing historical features (rolling delay rates) are filled with TRAIN_PRIOR=0.18 (the training dataset prior delayed rate). This is the expected behavior for new routes or tail numbers.",
     "contexts": [
-      "LOOKBACK = 60 trading days of historical data per prediction.",
-      "Each sequence consists of 60 timesteps x 16 features.",
-      "The model predicts 5 days ahead (D+5 horizon)."
+      "TRAIN_PRIOR=0.18 fills all NaN numerical feature columns at inference time.",
+      "Rolling features like te_airline_w7 represent the historical 7-day delay rate for the airline — NaN when no history exists.",
+      "CatBoost handles missing categorical values via the MISSING_TOKEN sentinel."
     ]
   },
   {
-    "query": "What is the expected AAPL price in 5 days?",
-    "expected_answer": "The predicted price is computed as current_price_usd + predicted_delta_d5_usd from the LSTM model.",
+    "query": "Which months have the highest flight delay rates?",
+    "expected_answer": "June and July have the highest delay rates due to summer thunderstorms. December and January also see elevated delays from winter weather.",
     "contexts": [
-      "predicted_price_d5_usd = current_price_usd + predicted_delta_d5_usd.",
-      "The model predicts the price delta, not the absolute price.",
-      "Direction is UP if predicted_delta > 0, DOWN otherwise."
+      "Delays peak in June-July (summer thunderstorm season) and December-January (winter storms).",
+      "September and October have the lowest delay rates historically.",
+      "MONTH is a feature in the model — the doy_sin/doy_cos encoding captures seasonal patterns smoothly."
     ]
   },
   {
-    "query": "What is the VaR for 500 AAPL shares at 99% confidence?",
-    "expected_answer": "VaR 99% total = RMSE * 3 * position_size. For 500 shares, this is the maximum expected loss at 99% confidence.",
+    "query": "How do I interpret the delayed_probability value returned by the model?",
+    "expected_answer": "delayed_probability is a calibrated probability (0-1) from Platt calibration on the CatBoost raw score. A flight is predicted delayed when delayed_probability >= threshold. The closer to 0.5 the probability is relative to the threshold, the more uncertain the prediction.",
     "contexts": [
-      "var_99_per_share_usd = RMSE * 3.",
-      "var_99_total_usd = RMSE * 3 * position_size.",
-      "Risk level for 500 shares is MEDIUM. requires_human_review is False."
+      "delayed_probability is a Platt-calibrated probability: values closer to 1.0 indicate higher delay risk.",
+      "The model predicts delayed=true when delayed_probability >= threshold (typically ~0.5).",
+      "When delayed_probability is close to the threshold, the prediction is uncertain and external factors should be considered."
     ]
   },
   {
-    "query": "How is RSI calculated for AAPL?",
-    "expected_answer": "RSI-14 uses a 14-period exponential moving average of gains and losses. Values above 70 are overbought, below 30 oversold.",
+    "query": "Is an evening flight from DFW to DEN likely to be delayed?",
+    "expected_answer": "Use predict_flight_delay with origin=DFW, destination=DEN, scheduled_departure around 1800-2000. Evening flights accumulate cascade delays and have 28-35% delay rates.",
     "contexts": [
-      "RSI = 100 - (100 / (1 + RS)) where RS = avg_gain / avg_loss over 14 periods.",
-      "Uses EWM with alpha=1/14 for smoothing.",
-      "RSI ranges from 0 to 100."
+      "Evening flights (after 6 PM) have 28-35% delay rates due to accumulated cascade delays.",
+      "DFW (Dallas/Fort Worth) has ~18% historical delay rate.",
+      "DEN (Denver) has ~17% historical delay rate; both are moderate-delay airports."
     ]
   },
   {
-    "query": "What was AAPL's price direction prediction accuracy?",
-    "expected_answer": "Directional accuracy is the percentage of test set predictions where the model correctly predicted whether the price would go up or down.",
+    "query": "What is a tail cascade delay?",
+    "expected_answer": "A tail cascade delay occurs when a specific aircraft (tail number) arrives late on an earlier flight and cannot depart on time for subsequent flights. The model tracks this via tail_dep_delay_mean and tail_delayed_rate features.",
     "contexts": [
-      "Directional accuracy = % of predictions where sign(pred_delta) == sign(true_delta).",
-      "Baseline comparison: Naive model always predicts delta=0.",
-      "SMA baseline uses rolling mean of the lookback window."
+      "tail_dep_delay_mean_w3/w5/w10: rolling mean of departure delays for the tail number over 3/5/10 flights.",
+      "tail_delayed_rate_w5/w10: fraction of flights for this tail number that were delayed in the last 5/10 flights.",
+      "These OPS features capture aircraft-level cascade risk and improve model AUC."
     ]
   },
   {
-    "query": "Is a position of 1000 AAPL shares high risk?",
-    "expected_answer": "Yes. A position of 1000 shares is classified as HIGH risk and requires human review before execution.",
+    "query": "How reliable is the weather delay information in the model?",
+    "expected_answer": "The model uses historical weather delay rates (origin_weather_rate_w90/w180) as rolling features based on past data, not real-time weather. For actual weather forecasts, external sources are needed.",
     "contexts": [
-      "risk_level is HIGH when position_size > 500.",
-      "requires_human_review is True for HIGH risk positions.",
-      "Expected error = MAE * position_size USD."
+      "origin_weather_rate_w90/w180: fraction of flights from this origin with weather delays in the past 90/180 days.",
+      "These are historical signals, not real-time weather data.",
+      "For live weather impact, supplement with current weather forecasts from aviation weather services."
     ]
   },
   {
-    "query": "What model is used to predict AAPL prices?",
-    "expected_answer": "An LSTM neural network trained on 60-day windows of 16 technical indicators, deployed as an ONNX model for inference.",
+    "query": "What is the difference between delay probability and delay prediction?",
+    "expected_answer": "The model outputs delayed_probability (0-1) via Platt calibration on CatBoost's raw score. The binary prediction (delayed: true/false) is made by comparing delayed_probability to the threshold. A flight is predicted delayed if delayed_probability >= threshold.",
     "contexts": [
-      "Architecture: LSTM(64) -> Dropout -> LSTM(32) -> Dropout -> Dense(16) -> Dense(1).",
-      "Model is exported to ONNX format for production inference via onnxruntime.",
-      "Training uses Huber loss with Adam optimizer, EarlyStopping and ReduceLROnPlateau."
+      "CatBoost raw probability → Platt calibration → delayed_probability.",
+      "Best threshold is chosen to satisfy precision >= 66% on the validation set.",
+      "delayed=true when delayed_probability >= threshold; delayed=false otherwise."
     ]
   },
   {
-    "query": "What does a bullish MACD crossover mean for AAPL?",
-    "expected_answer": "A bullish MACD crossover occurs when the MACD line crosses above the signal line, suggesting positive short-term momentum.",
+    "query": "How does the model handle weekends vs weekdays?",
+    "expected_answer": "The model includes is_weekend (1 if Saturday or Sunday, 0 otherwise) and DAY_OF_WEEK as features. Weekend flights often have different delay patterns than weekday flights.",
     "contexts": [
-      "BULLISH crossover: MACD line crosses above signal line.",
-      "BEARISH crossover: MACD line crosses below signal line.",
-      "MACD signal line is a 9-period EMA of the MACD line."
+      "is_weekend=1 for DAY_OF_WEEK in {6, 7} (Saturday, Sunday).",
+      "DAY_OF_WEEK is also used in te_origin_dow_w30 — rolling delay rate by origin+day of week combination.",
+      "Weekends typically have lower business travel and different congestion patterns."
     ]
   },
   {
-    "query": "How does the agent use the tools to answer questions?",
-    "expected_answer": "The ReAct agent decides which tool to call based on the question, executes it, observes the result, and synthesizes a final answer.",
+    "query": "What does the drift monitoring endpoint do?",
+    "expected_answer": "The /drift endpoint loads test_features_ref.parquet, compares training-set features (reference) vs test-set features (current) using Evidently DataDriftPreset, and reports the fraction of drifted features.",
     "contexts": [
-      "The agent uses ReAct (Reasoning + Acting) pattern.",
-      "Available tools: predict_price_delta, get_technical_indicators, calculate_position_risk.",
-      "The agent can chain multiple tool calls to answer complex questions."
+      "detect_and_log_drift reads data/processed/test_features_ref.parquet saved during make train.",
+      "Reference = months 1-8 (training split), Current = months 11-12 (test split).",
+      "Drift is reported as drift_share (0-1). warning_threshold=0.1, retrain_threshold=0.2."
     ]
   },
   {
-    "query": "What scaler is used to normalize features before prediction?",
-    "expected_answer": "RobustScaler from scikit-learn, fitted only on training data to prevent data leakage.",
+    "query": "Can the model predict delays for international flights?",
+    "expected_answer": "No — the model was trained on US domestic flights (2015 dataset). International flights may involve different airports (not in the reference data) and will use MISSING_TOKEN for unknown codes, falling back to TRAIN_PRIOR for historical features.",
     "contexts": [
-      "RobustScaler uses median and IQR, robust to outliers.",
-      "Scaler is fitted only on training split to prevent data leakage.",
-      "Separate scalers for features (scaler_X) and target (scaler_y)."
+      "Training data: US domestic flights from the 2015 flights.csv dataset.",
+      "Unknown airline/airport codes receive MISSING_TOKEN during sanitize_cat_cols.",
+      "Historical rolling features for unknown codes are filled with TRAIN_PRIOR=0.18."
     ]
   },
   {
-    "query": "What is the horizon of the AAPL price prediction?",
-    "expected_answer": "The model predicts 5 trading days (D+5) into the future, meaning the closing price 5 business days from today.",
+    "query": "How should I interpret a flight where delayed_probability is very close to the threshold?",
+    "expected_answer": "When delayed_probability is close to the threshold, the model is uncertain — either outcome is plausible. Small changes in conditions could flip the prediction. Consider external factors like weather forecasts and use additional information sources before making decisions.",
     "contexts": [
-      "horizon = 5 trading days (configurable in model_config.yaml).",
-      "Target: y_delta_h = close(t+5) - close(t).",
-      "Prediction is for closing price, not intraday price."
+      "When |delayed_probability - threshold| is small, the prediction is near the decision boundary.",
+      "In this range, small changes in conditions can flip the prediction.",
+      "Uncertain predictions should be treated with caution; use additional information sources."
     ]
   }
 ]

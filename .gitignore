@@ -12,7 +12,10 @@ build/
 venv/
 
 # Data - usar DVC para versionar
-data/raw/
+data/raw/*
+!data/raw/.gitkeep
+!data/raw/*.dvc
+!data/raw/.gitignore
 
 # Model artifacts (versionados pelo DVC)
 *.keras
@@ -48,3 +51,12 @@ Thumbs.db
 .ipynb_checkpoints/
 
 docs/aulas/
+docs/superpowers/plans/
+docs/superpowers/specs/
+
+# Large ML artifacts (versioned via DVC)
+data/processed/artifacts/*.cbm
+data/processed/test_features_ref.parquet
+
+# CatBoost training artifacts (generated on every run)
+catboost_info/

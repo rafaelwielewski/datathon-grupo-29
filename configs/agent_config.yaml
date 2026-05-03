@@ -1,6 +1,6 @@
 llm:
   provider: github
-  model: gpt-4o-mini
+  model: gpt-4.1
   base_url: https://models.inference.ai.azure.com
   temperature: 0.0
   max_tokens: 2048
@@ -15,6 +15,7 @@ rag:
     - docs
 
 agent:
-  max_iterations: 10
-  verbose: true
-  handle_parsing_errors: true
+  max_iterations: 5
+  verbose: false
+  handle_parsing_errors: false
+  early_stopping_method: "generate"

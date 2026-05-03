@@ -2,14 +2,17 @@ stages:
   train:
     cmd: python src/models/train.py
     deps:
+      - data/raw/flights.csv
+      - data/raw/airlines.csv
+      - data/raw/airports.csv
       - src/models/train.py
       - src/models/baseline.py
       - src/features/feature_engineering.py
       - configs/model_config.yaml
     outs:
-      - data/processed/artifacts/final_model.keras
-      - data/processed/artifacts/final_model.onnx
-      - data/processed/artifacts/scaler_X.joblib
-      - data/processed/artifacts/scaler_y.joblib
+      - data/processed/artifacts/catboost_model.cbm
+      - data/processed/artifacts/platt_calibrator.joblib
+      - data/processed/artifacts/best_threshold.txt
       - data/processed/artifacts/metadata.json
       - data/processed/artifacts/metrics.json
+      - data/processed/test_features_ref.parquet
