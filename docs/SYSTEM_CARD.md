@@ -9,8 +9,9 @@
 
 ## 2. Componentes
 - API: FastAPI em `src/serving/app.py`.
-- Agente: ReAct + 3 tools (predict_flight_delay, get_airport_delay_stats, get_airline_delay_stats).
+- Agente: ReAct + 4 tools (predict_flight_delay, get_airport_delay_stats, get_airline_delay_stats, search_flight_knowledge).
 - Modelo: CatBoost + calibração Platt, artefatos em `data/processed/artifacts/`.
+- RAG: FAISS + embeddings locais (knowledge base em `data/knowledge_base` e `docs`).
 - Monitoramento: Prometheus + Evidently (drift).
 
 ## 3. Dados
