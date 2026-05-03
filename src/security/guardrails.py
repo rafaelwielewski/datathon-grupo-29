@@ -19,14 +19,47 @@ class InputGuardrail:
     """Validate and sanitize user input before LLM use."""
 
     INJECTION_PATTERNS = [
+        # English — role/instruction override
         r'ignore\s+(all\s+)?previous\s+instructions',
+        r'disregard\s+(all\s+)?previous\s+instructions',
         r'you\s+are\s+now\s+a',
-        r'system:\s*',
-        r'<\|im_start\|>',
-        r'\[INST\]',
+        r'act\s+as\s+(?:a\s+|an\s+)(?!aviation)',
+        r'pretend\s+(you\s+are|to\s+be)',
         r'forget\s+(everything|all|your\s+instructions)',
+        r'override\s+(your\s+)?(instructions|rules|guidelines)',
+        r'new\s+instructions?\s*:',
+        r'your\s+(real|true|actual)\s+(purpose|goal|task)\s+is',
+        # English — prompt delimiters / jailbreak tokens
+        r'<\|im_start\|>',
+        r'<\|im_end\|>',
+        r'\[INST\]',
+        r'<</SYS>>',
+        r'###\s*(instruction|system|human|assistant)\s*:',
+        r'system:\s*\n',
         r'developer\s+message:\s*',
         r'tool\s+call:\s*',
+        r'<tool_call>',
+        r'<function_calls>',
+        # English — data exfiltration / scope escape
+        r'reveal\s+(your\s+)?(system\s+prompt|instructions|training)',
+        r'print\s+(your\s+)?(system\s+prompt|instructions)',
+        r'what\s+(are|were)\s+your\s+(original\s+)?instructions',
+        r'repeat\s+(everything|all)\s+(above|before)',
+        # Portuguese — role/instruction override
+        r'ignore\s+(todas\s+as\s+)?instru[çc][õo]es\s+anteriores',
+        r'esque[çc]a\s+(tudo|todas\s+as\s+instru[çc][õo]es)',
+        r'voc[êe]\s+(agora\s+[ée]|[ée]\s+agora)',
+        r'finja\s+(ser|que\s+[ée])',
+        r'aja\s+como\s+(um|uma)\s+(?!assistente\s+de\s+avia)',
+        r'novas?\s+instru[çc][õo]es?\s*:',
+        r'seu\s+(verdadeiro|real)\s+(objetivo|prop[oó]sito|papel)\s+[ée]',
+        r'desconsidere\s+(as\s+)?(instru[çc][õo]es|regras)',
+        r'substitua\s+(as\s+)?(instru[çc][õo]es|regras)',
+        # Portuguese — data exfiltration
+        r'revele?\s+(as\s+)?(instru[çc][õo]es|prompt\s+do\s+sistema)',
+        r'mostre?\s+(as\s+)?(instru[çc][õo]es|prompt\s+do\s+sistema)',
+        r'repita\s+(tudo|todas)\s+(acima|anterior)',
+        r'qual\s+[ée]\s+o\s+seu\s+prompt\s+de\s+sistema',
     ]
 
     def __init__(self, max_length: int = 1000):

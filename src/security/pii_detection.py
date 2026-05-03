@@ -11,7 +11,12 @@ class PiiMatch:
 
 
 _EMAIL_RE = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}')
-_PHONE_RE = re.compile(r'\b(?:\+?55\s?)?(?:\(?\d{2}\)?\s?)?\d{4,5}-?\d{4}\b')
+_PHONE_RE = re.compile(
+    r'(?<!\d)(?:'
+    r'\+?55[\s-]?(?:(?:\(\d{2}\)|\d{2})[\s-])?\d{4,5}[\s-]\d{4}'  # com DDI +55
+    r'|(?:\(\d{2}\)|\d{2})[\s-]\d{4,5}[\s-]\d{4}'  # com DDD obrigatório
+    r')(?!\d)'
+)
 _CPF_RE = re.compile(r'\b\d{3}\.\d{3}\.\d{3}-\d{2}\b|\b\d{11}\b')
 _CNPJ_RE = re.compile(r'\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b|\b\d{14}\b')
 _CEP_RE = re.compile(r'\b\d{5}-\d{3}\b')
