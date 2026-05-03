@@ -8,6 +8,7 @@ from pathlib import Path
 
 import joblib
 import mlflow
+import mlflow.pyfunc as pyfunc
 import numpy as np
 import pandas as pd
 import yaml
@@ -349,7 +350,6 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
         approve_model = os.getenv('MLFLOW_APPROVE', 'false').lower() == 'true'
 
         try:
-            from mlflow import pyfunc
             from mlflow.tracking import MlflowClient
 
             class _FlightDelayPyfunc(pyfunc.PythonModel):
