@@ -7,8 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir tensorflow scikit-learn pandas numpy yfinance \
-    joblib mlflow matplotlib plotly statsmodels tf2onnx
+RUN pip install --no-cache-dir -e "." --timeout 120
 
 COPY src/ ./src/
 COPY configs/ ./configs/
