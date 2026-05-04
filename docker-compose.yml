@@ -5,6 +5,8 @@ services:
       dockerfile: Dockerfile.train
     volumes:
       - ./data:/app/data
+      - ./data/knowledge_base:/app/data/knowledge_base:ro
+      - ./docs:/app/docs:ro
       - ./configs:/app/configs
       - ./mlruns:/app/mlruns
     env_file: .env
