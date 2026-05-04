@@ -1,3 +1,13 @@
-from src.models.baseline import NaiveBaseline, SMABaseline, build_lstm_model
+from src.models.baseline import (
+    LogisticRegressionBaseline,
+    MajorityClassBaseline,
+    PriorRateBaseline,
+    classification_metrics,
+)
 
-__all__ = ['NaiveBaseline', 'SMABaseline', 'build_lstm_model']
+__all__ = [
+    'MajorityClassBaseline',
+    'PriorRateBaseline',
+    'LogisticRegressionBaseline',
+    'classification_metrics',
+]

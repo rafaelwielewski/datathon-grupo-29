@@ -6,6 +6,13 @@ import os
 from pathlib import Path
 from typing import Callable
 
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
 import mlflow
 from ragas import EvaluationDataset, evaluate
 from ragas.embeddings import LangchainEmbeddingsWrapper
@@ -115,14 +122,15 @@ def evaluate_rag_pipeline(
 
 
 def _default_rag_fn() -> Callable[[str], tuple[str, list[str]]]:
-    """Adapta o agente real para a interface (answer, contexts) esperada pelo RAGAS."""
-    import requests
+    """Usa o agente localmente para a interface (answer, contexts) esperada pelo RAGAS."""
+    from src.agent.react_agent import build_agent_executor, invoke_agent
+
+    agent = build_agent_executor()
 
     def rag_fn(query: str) -> tuple[str, list[str]]:
-        resp = requests.post('http://localhost:8000/query', json={'question': query}, timeout=60)  # noqa: S113
-        data = resp.json()
-        answer = data.get('answer', '')
-        contexts = [step['content'] for step in (data.get('intermediate_steps') or []) if step.get('role') == 'tool']
+        res = invoke_agent(agent, query)
+        answer = res.get('output', '')
+        contexts = [step['content'] for step in res.get('intermediate_steps', []) if step.get('role') == 'tool']
         return answer, contexts
 
     return rag_fn

@@ -618,7 +618,7 @@ Pergunta: {input}
 
 def create_datathon_agent(
     tools: list[Tool],
-    model_name: str = "gpt-4o-mini",
+    model_name: str = "gpt-4.1",
     temperature: float = 0.0,
 ) -> AgentExecutor:
     """Cria agente ReAct para o Datathon.
@@ -886,7 +886,7 @@ Use este checklist como guia antes do Demo Day:
 - [x] `pyproject.toml` com todas as dependências
 
 ### Etapa 2 — LLM + Agente
-- [x] LLM servido via API (GitHub Models gpt-4o-mini, gratuito via Copilot)
+- [x] LLM servido via API (GitHub Models gpt-4.1, gratuito via Copilot)
 - [x] Agente ReAct funcional com ≥ 3 tools relevantes ao domínio
 - [x] RAG retornando contexto relevante dos dados fornecidos
 - [x] CI/CD pipeline funcional (GitHub Actions)
@@ -900,12 +900,12 @@ Use este checklist como guia antes do Demo Day:
 - [x] Detecção de drift implementada e documentada
 
 ### Etapa 4 — Segurança + Governança
-- [ ] OWASP mapping com ≥ 5 ameaças e mitigações
-- [ ] Guardrails de input e output funcionais
-- [ ] ≥ 5 cenários adversariais testados e documentados
-- [ ] Plano LGPD aplicado ao caso real
-- [ ] Explicabilidade e fairness documentados
-- [ ] System Card completo
+- [x] OWASP mapping com ≥ 5 ameaças e mitigações
+- [x] Guardrails de input e output funcionais
+- [x] ≥ 5 cenários adversariais testados e documentados
+- [x] Plano LGPD aplicado ao caso real
+- [x] Explicabilidade e fairness documentados
+- [x] System Card completo
 
 ### Demo Day
 - [ ] Pitch ≤ 10 min: Problema → Abordagem → Demo → Resultados → Impacto

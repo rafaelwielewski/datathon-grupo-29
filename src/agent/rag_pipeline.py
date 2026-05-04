@@ -42,6 +42,13 @@ def build_knowledge_base_docs(cfg: dict) -> list[Document]:
 def build_retriever(cfg: dict) -> BaseRetriever:
     """Constrói retriever FAISS com embeddings locais (sentence-transformers)."""
     docs = build_knowledge_base_docs(cfg)
+
+    if not docs:
+        logger.warning('Nenhum documento encontrado! Injetando doc de fallback para o FAISS.')
+        docs = [
+            Document(page_content='A base de conhecimento está vazia ou não foi carregada corretamente.', metadata={'source': 'fallback'})
+        ]
+
     embeddings = HuggingFaceEmbeddings(model_name=cfg['rag']['embedding_model'])
     vectorstore = FAISS.from_documents(docs, embeddings)
     return vectorstore.as_retriever(search_kwargs={'k': cfg['rag']['k_results']})
@@ -52,10 +59,9 @@ def build_rag_tool(cfg: dict):
     retriever = build_retriever(cfg)
     return create_retriever_tool(
         retriever,
-        name='search_financial_knowledge',
+        name='search_flight_knowledge',
         description=(
-            'Searches the AAPL financial knowledge base. Use this tool to find context about: '
-            'AAPL company profile, technical indicator interpretation, risk management guidelines, '
-            'model limitations, and position sizing rules.'
+            'Searches the flight delay knowledge base for information about airports, '
+            'airlines, weather patterns, and operational factors that affect flight punctuality.'
         ),
     )

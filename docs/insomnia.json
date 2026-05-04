@@ -1,14 +1,14 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2026-04-25",
+  "__export_date": "2026-05-01",
   "__export_source": "datathon-grupo-29",
   "resources": [
     {
       "_id": "wrk_datathon",
       "_type": "workspace",
-      "name": "Datathon Grupo 29 — AAPL Financial Assistant",
-      "description": "API do agente ReAct para análise de ações AAPL com previsão LSTM D+5"
+      "name": "Datathon Grupo 29 — Flight Delay Prediction",
+      "description": "API de previsão de atrasos de voo com CatBoost + Platt calibration"
     },
     {
       "_id": "env_base",
@@ -42,10 +42,10 @@
       "name": "Query — Agente ReAct"
     },
     {
-      "_id": "req_predict",
+      "_id": "req_probability",
       "_type": "request",
       "parentId": "fld_query",
-      "name": "Previsão D+5",
+      "name": "Probabilidade de Atraso",
       "method": "POST",
       "url": "{{ _.base_url }}/query",
       "headers": [
@@ -53,14 +53,14 @@
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"question\": \"What is the AAPL price prediction for the next 5 days?\"\n}"
+        "text": "{\n  \"question\": \"Qual a probabilidade de atraso do voo AA123 de ATL para LAX hoje?\"\n}"
       }
     },
     {
-      "_id": "req_indicators",
+      "_id": "req_reasons",
       "_type": "request",
       "parentId": "fld_query",
-      "name": "Indicadores Técnicos",
+      "name": "Causas de Atraso por Aeroporto",
       "method": "POST",
       "url": "{{ _.base_url }}/query",
       "headers": [
@@ -68,14 +68,14 @@
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"question\": \"What are the current technical indicators for AAPL? Is the RSI overbought or oversold?\"\n}"
+        "text": "{\n  \"question\": \"Quais são as principais causas de atrasos no aeroporto JFK?\"\n}"
       }
     },
     {
-      "_id": "req_risk_small",
+      "_id": "req_airline_comparison",
       "_type": "request",
       "parentId": "fld_query",
-      "name": "Risco de Posição — 100 ações",
+      "name": "Comparação de Companhias Aéreas",
       "method": "POST",
       "url": "{{ _.base_url }}/query",
       "headers": [
@@ -83,14 +83,14 @@
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"question\": \"What is the risk of holding 100 AAPL shares? What is the expected error and VaR?\"\n}"
+        "text": "{\n  \"question\": \"Comparar taxa de atraso entre Delta (DL) e American Airlines (AA)\"\n}"
       }
     },
     {
-      "_id": "req_risk_large",
+      "_id": "req_route_analysis",
       "_type": "request",
       "parentId": "fld_query",
-      "name": "Risco de Posição — 1000 ações (alto risco)",
+      "name": "Análise de Rota",
       "method": "POST",
       "url": "{{ _.base_url }}/query",
       "headers": [
@@ -98,14 +98,14 @@
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"question\": \"I want to buy 1000 AAPL shares. What is the risk level and do I need human approval?\"\n}"
+        "text": "{\n  \"question\": \"Qual a taxa de atraso na rota ATL-LAX e quais horários são mais propensos a atraso?\"\n}"
       }
     },
     {
-      "_id": "req_combined",
+      "_id": "req_hour_patterns",
       "_type": "request",
       "parentId": "fld_query",
-      "name": "Análise Completa",
+      "name": "Padrões Horários",
       "method": "POST",
       "url": "{{ _.base_url }}/query",
       "headers": [
@@ -113,8 +113,34 @@
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"question\": \"Based on the current technical indicators and the D+5 prediction, should I buy or sell AAPL? What position size is appropriate?\"\n}"
+        "text": "{\n  \"question\": \"Em que horários do dia ocorrem mais atrasos em voos partindo de ORD?\"\n}"
       }
+    },
+    {
+      "_id": "fld_monitoring",
+      "_type": "request_group",
+      "parentId": "wrk_datathon",
+      "name": "Monitoring"
+    },
+    {
+      "_id": "req_drift",
+      "_type": "request",
+      "parentId": "fld_monitoring",
+      "name": "GET /drift",
+      "method": "GET",
+      "url": "{{ _.base_url }}/drift",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_id": "req_metrics",
+      "_type": "request",
+      "parentId": "fld_monitoring",
+      "name": "GET /metrics",
+      "method": "GET",
+      "url": "{{ _.base_url }}/metrics/",
+      "headers": [],
+      "body": {}
     },
     {
       "_id": "fld_validation",

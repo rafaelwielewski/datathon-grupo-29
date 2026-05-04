@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 @staticmethod
 def _mock_rag_fn(query: str) -> tuple[str, list[str]]:
-    return 'The model predicts a 5-day delta.', ['LSTM model predicts D+5 price.']
+    return 'The model predicts a moderate delay probability for this flight.', ['CatBoost predicts flight delay probability.']
 
 
 # --- RAGAS ---
@@ -16,9 +16,9 @@ def _mock_rag_fn(query: str) -> tuple[str, list[str]]:
 def test_evaluate_rag_returns_four_metrics(tmp_path: Path):
     data = [
         {
-            'query': 'What is the AAPL price prediction?',
-            'expected_answer': 'The model predicts a 5-day delta.',
-            'contexts': ['LSTM model predicts D+5 price.', 'Uses 60-day lookback.'],
+            'query': 'What is the probability of flight AA123 ATL-LAX being delayed?',
+            'expected_answer': 'The model predicts a moderate delay probability.',
+            'contexts': ['CatBoost predicts flight delay probability.', 'Uses route and schedule features.'],
         }
     ]
     golden_set_file = tmp_path / 'golden_set.json'
@@ -56,9 +56,9 @@ def test_evaluate_rag_returns_four_metrics(tmp_path: Path):
 def test_evaluate_rag_logs_to_mlflow(tmp_path: Path):
     data = [
         {
-            'query': 'What is the AAPL price prediction?',
-            'expected_answer': 'The model predicts a 5-day delta.',
-            'contexts': ['LSTM model predicts D+5 price.'],
+            'query': 'What is the probability of flight AA123 ATL-LAX being delayed?',
+            'expected_answer': 'The model predicts a moderate delay probability.',
+            'contexts': ['CatBoost predicts flight delay probability.'],
         }
     ]
     golden_set_file = tmp_path / 'golden_set.json'
@@ -98,26 +98,26 @@ def test_evaluate_rag_logs_to_mlflow(tmp_path: Path):
 
 def test_llm_judge_returns_three_criteria():
     mock_llm = MagicMock()
-    mock_llm.invoke.return_value.content = '{"relevance": 4, "faithfulness": 5, "financial_utility": 4}'
+    mock_llm.invoke.return_value.content = '{"relevance": 4, "faithfulness": 5, "aviation_utility": 4}'
 
     with patch('evaluation.llm_judge._build_llm', return_value=mock_llm):
         from evaluation.llm_judge import judge_answer
 
         result = judge_answer(
-            query='What is the AAPL prediction?',
-            answer='The model predicts +$0.14 in 5 days.',
-            contexts=['LSTM predicts D+5 delta.'],
+            query='Will flight AA123 be delayed?',
+            answer='The model predicts a moderate delay probability.',
+            contexts=['CatBoost predicts flight delay probability.'],
         )
 
     assert 'relevance' in result
     assert 'faithfulness' in result
-    assert 'financial_utility' in result
+    assert 'aviation_utility' in result
     assert all(1 <= v <= 5 for v in result.values())
 
 
 def test_llm_judge_clamps_scores():
     mock_llm = MagicMock()
-    mock_llm.invoke.return_value.content = '{"relevance": 10, "faithfulness": 0, "financial_utility": 3}'
+    mock_llm.invoke.return_value.content = '{"relevance": 10, "faithfulness": 0, "aviation_utility": 3}'
 
     with patch('evaluation.llm_judge._build_llm', return_value=mock_llm):
         from evaluation.llm_judge import judge_answer
@@ -126,7 +126,7 @@ def test_llm_judge_clamps_scores():
 
     assert result['relevance'] == 5
     assert result['faithfulness'] == 1
-    assert result['financial_utility'] == 3
+    assert result['aviation_utility'] == 3
 
 
 def test_llm_judge_invalid_json_fallback():
@@ -138,12 +138,12 @@ def test_llm_judge_invalid_json_fallback():
 
         result = judge_answer(query='q', answer='a', contexts=['c'])
 
-    assert result == {'relevance': 3, 'faithfulness': 3, 'financial_utility': 3}
+    assert result == {'relevance': 3, 'faithfulness': 3, 'aviation_utility': 3}
 
 
 def test_llm_judge_batch_returns_averages(tmp_path: Path):
     mock_llm = MagicMock()
-    mock_llm.invoke.return_value.content = '{"relevance": 4, "faithfulness": 5, "financial_utility": 3}'
+    mock_llm.invoke.return_value.content = '{"relevance": 4, "faithfulness": 5, "aviation_utility": 3}'
 
     golden_data = [
         {'query': 'q1', 'expected_answer': 'a1', 'contexts': ['c1']},
@@ -162,8 +162,8 @@ def test_llm_judge_batch_returns_averages(tmp_path: Path):
 
     assert 'avg_relevance' in result
     assert 'avg_faithfulness' in result
-    assert 'avg_financial_utility' in result
+    assert 'avg_aviation_utility' in result
     assert 'avg_overall' in result
     assert result['avg_relevance'] == 4.0
     assert result['avg_faithfulness'] == 5.0
-    assert result['avg_financial_utility'] == 3.0
+    assert result['avg_aviation_utility'] == 3.0

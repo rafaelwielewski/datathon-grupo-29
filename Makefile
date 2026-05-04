@@ -1,18 +1,23 @@
-.PHONY: install setup train test lint format type-check security pre-commit serve clean \
+.PHONY: install setup data train test lint format type-check security pre-commit serve clean \
         dvc-train docker-build docker-train docker-serve mlflow-ui
 
 # First project setup - install dependencies and create folder structure
 setup: install
 	@mkdir -p data/raw data/processed data/golden_set data/processed/artifacts
-	@echo "Setup complete! Run 'make train' to train the model."
+	@echo "Setup complete! Run 'make data' then 'make train'."
+
+# Generate serving artifacts and local sample dataset (no full training required)
+data:
+	@echo "Generating artifacts and sample data..."
+	@python scripts/generate_data_artifacts.py
 
 # Install all dependencies including dev extras
 install:
 	pip install -e ".[dev]"
 
-# Train the LSTM model and export to ONNX
+# Train the CatBoost classification model for flight delays
 train:
-	@echo "Training LSTM model..."
+	@echo "Training CatBoost flight delay model..."
 	python src/models/train.py
 
 # Start FastAPI serving endpoint locally on port 8000

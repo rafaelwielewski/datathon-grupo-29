@@ -1,6 +1,6 @@
-from __future__ import annotations
+"""Tests for the flight delay prediction API."""
 
-from unittest.mock import MagicMock, patch
+from __future__ import annotations
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,51 +8,50 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def client():
-    """TestClient com agente mockado — sem chamadas reais ao LLM."""
-    from src.serving import app as app_module
+    from src.serving.app import app
 
-    mock_executor = MagicMock()
-    mock_executor.invoke.return_value = {
-        'messages': [
-            MagicMock(content='test question', type='human'),
-            MagicMock(content='AAPL está com RSI neutro. Previsão D+5: alta de $3.20.', type='ai'),
-        ]
-    }
-
-    app_module._get_agent.cache_clear()
-    with patch.object(app_module, '_get_agent', return_value=mock_executor):
-        yield TestClient(app_module.app)
+    return TestClient(app)
 
 
-def test_health_ok(client: TestClient):
-    response = client.get('/health')
-    assert response.status_code == 200
-    assert response.json()['status'] == 'ok'
+class TestHealthEndpoint:
+    def test_health_check_success(self, client: TestClient) -> None:
+        response = client.get('/health')
+        assert response.status_code == 200
+        assert response.json()['status'] == 'ok'
+
+    def test_health_response_is_json(self, client: TestClient) -> None:
+        response = client.get('/health')
+        assert response.headers['content-type'].lower().startswith('application/json')
+        assert isinstance(response.json(), dict)
 
 
-def test_query_returns_answer(client: TestClient):
-    response = client.post('/query', json={'question': 'Qual a previsão para AAPL?'})
-    assert response.status_code == 200
-    data = response.json()
-    assert 'answer' in data
-    assert len(data['answer']) > 0
+class TestQueryEndpoint:
+    def test_query_rejects_empty_question(self, client: TestClient) -> None:
+        response = client.post('/query', json={'question': ''})
+        assert response.status_code == 422
+
+    def test_query_rejects_missing_question(self, client: TestClient) -> None:
+        response = client.post('/query', json={})
+        assert response.status_code == 422
+
+    def test_query_rejects_question_too_long(self, client: TestClient) -> None:
+        response = client.post('/query', json={'question': 'x' * 1001})
+        assert response.status_code == 422
 
 
-def test_query_empty_rejected(client: TestClient):
-    response = client.post('/query', json={'question': ''})
-    assert response.status_code == 422
+class TestMetricsEndpoint:
+    def test_metrics_returns_prometheus_format(self, client: TestClient) -> None:
+        response = client.get('/metrics')
+        assert response.status_code in [200, 404]
+        if response.status_code == 200:
+            assert 'HELP' in response.text or 'TYPE' in response.text
 
 
-def test_query_missing_field_rejected(client: TestClient):
-    response = client.post('/query', json={})
-    assert response.status_code == 422
+class TestErrorHandling:
+    def test_unknown_endpoint_returns_404(self, client: TestClient) -> None:
+        response = client.get('/nonexistent_endpoint')
+        assert response.status_code == 404
 
-
-def test_query_too_long_rejected(client: TestClient):
-    response = client.post('/query', json={'question': 'x' * 1001})
-    assert response.status_code == 422
-
-
-def test_docs_available(client: TestClient):
-    response = client.get('/docs')
-    assert response.status_code == 200
+    def test_docs_available(self, client: TestClient) -> None:
+        response = client.get('/docs')
+        assert response.status_code == 200

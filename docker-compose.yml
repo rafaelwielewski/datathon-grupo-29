@@ -5,10 +5,17 @@ services:
       dockerfile: Dockerfile.train
     volumes:
       - ./data:/app/data
+      - ./data/knowledge_base:/app/data/knowledge_base:ro
+      - ./docs:/app/docs:ro
       - ./configs:/app/configs
       - ./mlruns:/app/mlruns
     env_file: .env
-    profiles: [train]
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - GIT_PYTHON_REFRESH=quiet
+    depends_on:
+      - mlflow
+    profiles: [ train ]
 
   serve:
     build:
@@ -17,26 +24,32 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./data/processed/artifacts:/app/data/processed/artifacts
+      - ./data/processed:/app/data/processed
+      - ./data/knowledge_base:/app/data/knowledge_base:ro
+      - ./docs:/app/docs:ro
+      - ./src:/app/src:rw
+      - ./configs:/app/configs:ro
+      - ./.env:/.env:ro
+    # Use --reload in development so code changes are picked up by uvicorn
+    command: uvicorn src.serving.app:app --host 0.0.0.0 --port 8000 --reload
     env_file: .env
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - GIT_PYTHON_REFRESH=quiet
     depends_on:
       - mlflow
-    profiles: [serve, monitoring]
+    profiles: [ serve, monitoring ]
 
   mlflow:
     image: ghcr.io/mlflow/mlflow:latest
     command: >
-      mlflow server
-      --host 0.0.0.0
-      --port 5000
-      --backend-store-uri sqlite:///mlflow.db
-      --default-artifact-root /mlruns
+      mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:////mlflow_data/mlflow.db --artifacts-destination /mlruns --serve-artifacts --allowed-hosts "mlflow,mlflow:5000,localhost,localhost:5000,127.0.0.1,127.0.0.1:5000"
     ports:
       - "5000:5000"
     volumes:
       - ./mlruns:/mlruns
-      - ./mlflow.db:/mlflow.db
-    profiles: [serve, monitoring]
+      - mlflow_data:/mlflow_data
+    profiles: [ serve, monitoring, train ]
 
   prometheus:
     image: prom/prometheus:v2.51.0
@@ -48,7 +61,7 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-    profiles: [monitoring]
+    profiles: [ monitoring ]
 
   grafana:
     image: grafana/grafana:10.4.0
@@ -65,8 +78,9 @@ services:
       - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/json/datathon_dashboard.json
     depends_on:
       - prometheus
-    profiles: [monitoring]
+    profiles: [ monitoring ]
 
 volumes:
   prometheus_data:
   grafana_data:
+  mlflow_data:
