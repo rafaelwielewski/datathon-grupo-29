@@ -6,6 +6,7 @@ on:
     paths: ['src/**', 'tests/**', 'evaluation/**']
   pull_request:
     paths: ['src/**', 'tests/**', 'evaluation/**']
+  workflow_dispatch:
 
 jobs:
   quality:
