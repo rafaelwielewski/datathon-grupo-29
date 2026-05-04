@@ -83,8 +83,16 @@ Features históricas ausentes são preenchidas com `TRAIN_PRIOR = 0.18`.
 |---|---|
 | Equipe responsável | Grupo 29 — FIAP Datathon Fase 05 |
 | Experimento MLflow | `datathon-grupo-29` |
-| Tracking URI | `sqlite:///mlflow.db` |
+| Tracking URI | `MLFLOW_TRACKING_URI` (env) |
 | Repositório | `datathon-grupo-29` |
 | Artefatos | `data/processed/artifacts/` (DVC) |
 | Risk level | Medium |
 | Fairness checked | Não aplicável (predição operacional, sem atributos sensíveis) |
+
+### Approval gate (Model Registry)
+
+O registro do modelo ocorre no MLflow Model Registry com `MLFLOW_MODEL_NAME`.
+O status de aprovacao e definido por `MLFLOW_APPROVE`:
+
+- `false` (padrao): registra e marca como `pending`.
+- `true`: promove a versao para `Staging` e marca como `approved`.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 
 import mlflow
@@ -159,7 +160,7 @@ def detect_and_log_drift() -> dict:
 
     DRIFT_SHARE.set(result['drift_share'])
 
-    mlflow.set_tracking_uri('sqlite:///mlflow.db')
+    mlflow.set_tracking_uri(os.getenv('MLFLOW_TRACKING_URI', 'sqlite:///mlflow.db'))
     mlflow.set_experiment('datathon-grupo-29-monitoring')
     with mlflow.start_run(run_name='drift_detection'):
         mlflow.set_tag('model_type', 'drift_monitor')

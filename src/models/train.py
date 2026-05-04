@@ -2,11 +2,20 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from datetime import datetime
 from pathlib import Path
 
 import joblib
 import mlflow
+
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+import mlflow.pyfunc as pyfunc
 import numpy as np
 import pandas as pd
 import yaml
@@ -225,7 +234,7 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
 
     model = CatBoostClassifier(**cb_cfg)
 
-    mlflow.set_tracking_uri('sqlite:///mlflow.db')
+    mlflow.set_tracking_uri(os.getenv('MLFLOW_TRACKING_URI', 'sqlite:///mlflow.db'))
     mlflow.set_experiment('datathon-grupo-29')
 
     with mlflow.start_run(run_name='catboost-flight-delay-training') as run:
@@ -343,6 +352,59 @@ def train(config_path: Path = CONFIG_PATH) -> dict:
 
         mlflow.log_artifacts(str(artifacts_dir))
         mlflow.log_artifact(str(drift_path))
+
+        model_name = os.getenv('MLFLOW_MODEL_NAME', 'flight-delay-catboost')
+        approve_model = os.getenv('MLFLOW_APPROVE', 'false').lower() == 'true'
+
+        try:
+            from mlflow.tracking import MlflowClient
+
+            class _FlightDelayPyfunc(pyfunc.PythonModel):
+                def load_context(self, context):
+                    from catboost import CatBoostClassifier
+
+                    self.model = CatBoostClassifier()
+                    self.model.load_model(context.artifacts['catboost_model'])
+                    self.calibrator = joblib.load(context.artifacts['calibrator'])
+
+                def predict(self, context, model_input):
+                    proba_raw = self.model.predict_proba(model_input)[:, 1]
+                    proba_cal = self.calibrator.predict_proba(proba_raw.reshape(-1, 1))[:, 1]
+                    return proba_cal
+
+            model_info = pyfunc.log_model(
+                artifact_path='model_package',
+                python_model=_FlightDelayPyfunc(),
+                artifacts={
+                    'catboost_model': str(artifacts_dir / 'catboost_model.cbm'),
+                    'calibrator': str(artifacts_dir / 'platt_calibrator.joblib'),
+                },
+                registered_model_name=model_name,
+            )
+
+            client = MlflowClient()
+            version = getattr(model_info, 'registered_model_version', None)
+            if version is None:
+                latest = client.get_latest_versions(model_name, stages=['None'])
+                if latest:
+                    version = latest[-1].version
+
+            if version is not None:
+                client.set_model_version_tag(
+                    model_name,
+                    version,
+                    'approval_status',
+                    'approved' if approve_model else 'pending',
+                )
+                if approve_model:
+                    client.transition_model_version_stage(
+                        name=model_name,
+                        version=version,
+                        stage='Staging',
+                        archive_existing_versions=True,
+                    )
+        except Exception as exc:
+            logger.warning('Model registry step failed: %s', exc)
 
     logger.info('Training complete. Artifacts saved to %s', artifacts_dir.resolve())
     return metrics

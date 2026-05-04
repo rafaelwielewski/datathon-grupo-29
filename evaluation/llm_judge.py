@@ -3,7 +3,15 @@ from __future__ import annotations
 import json
 import logging
 import os
+import time
 from typing import Callable
+
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
 
 import mlflow
 
@@ -93,6 +101,7 @@ def evaluate_with_judge(
         scores = judge_answer(item['query'], answer, contexts, llm=llm)
         all_scores.append(scores)
         logger.info('Query: %s | Scores: %s', item['query'][:60], scores)
+        time.sleep(2)
 
     n = len(all_scores)
     result: dict[str, float] = {
@@ -120,8 +129,20 @@ def evaluate_with_judge(
 if __name__ == '__main__':
     import logging
 
-    from evaluation.ragas_eval import _default_rag_fn
-
     logging.basicConfig(level=logging.INFO)
-    results = evaluate_with_judge('data/golden_set/golden_set.json', _default_rag_fn())
+
+    def _local_agent_fn():
+        from src.agent.react_agent import build_agent_executor, invoke_agent
+
+        agent = build_agent_executor()
+
+        def rag_fn(query: str) -> tuple[str, list[str]]:
+            res = invoke_agent(agent, query)
+            answer = res.get('output', '')
+            contexts = [step['content'] for step in res.get('intermediate_steps', []) if step.get('role') == 'tool']
+            return answer, contexts
+
+        return rag_fn
+
+    results = evaluate_with_judge('data/golden_set/golden_set.json', _local_agent_fn())
     print(json.dumps(results, indent=2))

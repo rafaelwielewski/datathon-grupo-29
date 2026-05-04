@@ -34,6 +34,7 @@ catboost_params:
   bootstrap_type: "Bernoulli"
   subsample: 0.7
   allow_writing_files: false
+  use_gpu: true
   use_gpu: false
 
 paths:
