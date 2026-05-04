@@ -8,8 +8,10 @@ from pathlib import Path
 
 import joblib
 import mlflow
+
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass

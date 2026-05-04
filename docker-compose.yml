@@ -23,6 +23,8 @@ services:
       - "8000:8000"
     volumes:
       - ./data/processed:/app/data/processed
+      - ./data/knowledge_base:/app/data/knowledge_base:ro
+      - ./docs:/app/docs:ro
       - ./src:/app/src:rw
       - ./configs:/app/configs:ro
       - ./.env:/.env:ro

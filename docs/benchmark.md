@@ -34,7 +34,7 @@ Ambiente: GitHub Models API (Azure), acesso via `GITHUB_TOKEN`. Inferência remo
 |---|---|---|---|---|---|
 | A | gpt-4.1 | 0.0 | Não | 4.0/5 | Fallback sem RAG |
 | B | gpt-4.1 | 0.0 | Sim | 5.0/5 | **Recomendado** |
-| C | gpt-4.1 | 0.2 | Sim | TBD | Comparar estabilidade |
+| C | gpt-4.1 | 0.2 | Sim | [INSERIR_RESULTADO_AQUI]/5 | Comparar estabilidade |
 
 **Configuração padrão:** B — `gpt-4.1` com RAG (FAISS + all-MiniLM-L6-v2) e temperatura 0.0.
 
@@ -46,3 +46,10 @@ Ambiente: GitHub Models API (Azure), acesso via `GITHUB_TOKEN`. Inferência remo
 - Vector store: FAISS (in-memory)
 - Chunks: 512 tokens, overlap 50 tokens
 - K resultados por query: 4
+
+## Governança e Deploy (Approval Gate)
+
+Para garantir qualidade e segurança, o ciclo de vida dos modelos de ML utiliza um processo de **Approval Gate** integrado ao MLflow.
+
+O pipeline de treinamento registra o modelo e suas métricas continuamente, mas sua promoção à produção é condicional. O modelo só é promovido e marcado formalmente com `approval_status=approved` se a variável de ambiente `MLFLOW_APPROVE=true` estiver definida (tipicamente via pipeline de CI/CD).
+Esse processo garante uma etapa de revisão validada (seja por métricas estabelecidas ou por um _Human-in-the-Loop_) antes de disponibilizar uma nova versão de modelo para o agente consumi-lo.

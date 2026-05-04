@@ -128,6 +128,10 @@ def build_agent_executor(
 
         tools = get_all_tools()
 
+        from src.agent.rag_pipeline import build_rag_tool
+
+        tools.append(build_rag_tool(cfg))
+
     if len(tools) < 3:
         logger.warning('Datathon exige >= 3 tools. Fornecidas: %d', len(tools))
 
