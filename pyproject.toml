@@ -1,7 +1,7 @@
 [project]
 name = "datathon-grupo-29"
 version = "0.1.0"
-description = "Datathon FIAP - Grupo 29: previsão de preços com LSTM"
+description = "Datathon FIAP - Grupo 29: flight delay prediction with CatBoost"
 requires-python = ">=3.11"
 dependencies = [
     "catboost>=1.2.0",
@@ -27,6 +27,7 @@ dependencies = [
     "openai>=1.0.0",
     "prometheus-client>=0.20.0",
     "evidently>=0.4.0",
+    "feast>=0.40.0",
 ]
 
 [project.optional-dependencies]
