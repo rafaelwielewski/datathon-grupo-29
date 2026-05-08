@@ -1,47 +1,156 @@
 [
-  {
-    "query": "What is the probability that flight AA123 from ATL to LAX will be delayed tomorrow morning?",
-    "expected_answer": "Use predict_flight_delay with airline=AA, origin=ATL, destination=LAX to get the delay probability. The model uses CatBoost with Platt calibration.",
-    "contexts": [
-      "The CatBoost model predicts binary flight delay (arrival >= 15 minutes late).",
-      "predict_flight_delay requires: airline, origin, destination, month, day, day_of_week, scheduled_departure, scheduled_arrival, distance, scheduled_time.",
-      "The model outputs delayed (bool), delayed_probability (float), and threshold (float)."
-    ]
-  },
-  {
-    "query": "Which airport has the highest historical delay rate?",
-    "expected_answer": "Use get_airport_delay_stats for the airports of interest. O'Hare (ORD) and SFO typically have the highest rates (~24-25%).",
-    "contexts": [
-      "get_airport_delay_stats returns delay_rate, avg_delay_minutes, and total_flights for a given IATA code.",
-      "ORD (Chicago O'Hare) has high delays due to severe weather and traffic congestion.",
-      "SFO (San Francisco) experiences frequent fog-related delays."
-    ]
-  },
-  {
-    "query": "Is Delta Airlines more reliable than Spirit Airlines?",
-    "expected_answer": "Delta (DL) has a delay rate around 17%, while Spirit (NK) is around 26%. Use get_airline_delay_stats to confirm with latest data.",
-    "contexts": [
-      "get_airline_delay_stats returns delay_rate, avg_delay_minutes, total_flights, and name.",
-      "Delta Air Lines is consistently among the top-performing US carriers for on-time performance.",
-      "Spirit Airlines operates with tight schedules, leading to higher delay rates."
-    ]
-  },
-  {
-    "query": "What time of day has the fewest flight delays?",
-    "expected_answer": "Early morning flights (5-8 AM, HHMM 500-800) have the lowest delay rates (~12%) because aircraft start fresh with no accumulated cascade delays.",
-    "contexts": [
-      "Early morning flights (5-8 AM) have ~12% delay rate — aircraft start fresh.",
-      "Evening flights (after 6 PM) accumulate cascade delays throughout the day, reaching 28-35%.",
-      "The sched_dep_period feature categorizes departures: morning (5-11), afternoon (12-17), evening (18-22), night."
-    ]
-  },
-  {
-    "query": "Will a flight from ORD to JFK on a Monday in July likely be delayed?",
-    "expected_answer": "Use predict_flight_delay with origin=ORD, destination=JFK, month=7, day_of_week=1. ORD has ~25% historical delay rate and July is peak storm season.",
-    "contexts": [
-      "O'Hare (ORD) has one of the highest delay rates (~25%) among major US airports.",
-      "July is peak summer thunderstorm season — delays peak in June-July.",
-      "ORD to JFK is a high-congestion route prone to NAS delays."
-    ]
-  }
+    {
+        "query": "What is the probability that flight AA123 from ATL to LAX will be delayed tomorrow morning?",
+        "expected_answer": "Use predict_flight_delay with airline=AA, origin=ATL, destination=LAX and the correct date/time to get delayed_probability and delayed.",
+        "contexts": [
+            "predict_flight_delay returns delayed_probability, delayed, and threshold.",
+            "The model predicts arrival delay >= 15 minutes.",
+            "Provide month, day, day_of_week, and scheduled_departure in HHMM."
+        ]
+    },
+    {
+        "query": "Which airport has the highest historical delay rate among ATL, ORD, and JFK?",
+        "expected_answer": "Call get_airport_delay_stats for ATL, ORD, and JFK and compare delay_rate values.",
+        "contexts": [
+            "get_airport_delay_stats returns delay_rate, avg_delay_minutes, and total_flights.",
+            "Compare the returned delay_rate fields to rank airports."
+        ]
+    },
+    {
+        "query": "Is Delta Airlines more reliable than Spirit Airlines?",
+        "expected_answer": "Use get_airline_delay_stats for DL and NK, then compare delay_rate and avg_delay_minutes.",
+        "contexts": [
+            "get_airline_delay_stats returns delay_rate, avg_delay_minutes, total_flights, and name.",
+            "Lower delay_rate indicates better on-time performance."
+        ]
+    },
+    {
+        "query": "What time of day has the fewest flight delays?",
+        "expected_answer": "Compare predictions at multiple scheduled_departure times (e.g., 600, 900, 1200, 1500, 1800, 2100) using predict_flight_delay.",
+        "contexts": [
+            "Use predict_flight_delay at different hours to compare delayed_probability.",
+            "Lower delayed_probability indicates fewer expected delays."
+        ]
+    },
+    {
+        "query": "Will a flight from ORD to JFK on a Monday in July likely be delayed?",
+        "expected_answer": "Use predict_flight_delay with origin=ORD, destination=JFK, month=7, day_of_week=1, and a representative scheduled_departure time.",
+        "contexts": [
+            "predict_flight_delay requires date and time fields for a specific prediction.",
+            "Return the delayed_probability and delayed fields from the tool."
+        ]
+    },
+    {
+        "query": "Give me the delay stats for airport LAX.",
+        "expected_answer": "Use get_airport_delay_stats with airport_code=LAX and return delay_rate and avg_delay_minutes.",
+        "contexts": [
+            "get_airport_delay_stats accepts an IATA code and returns delay_rate and avg_delay_minutes."
+        ]
+    },
+    {
+        "query": "Compare AA and UA delay rates for airlines.",
+        "expected_answer": "Call get_airline_delay_stats for AA and UA and compare the delay_rate values.",
+        "contexts": [
+            "get_airline_delay_stats provides delay_rate and total_flights for each carrier."
+        ]
+    },
+    {
+        "query": "What is the predicted delay risk for a DL flight from SFO to LAX on Sep 10 at 18:00?",
+        "expected_answer": "Use predict_flight_delay with airline=DL, origin=SFO, destination=LAX, month=9, day=10, day_of_week, scheduled_departure=1800.",
+        "contexts": [
+            "predict_flight_delay requires month, day, day_of_week, and scheduled_departure in HHMM.",
+            "The output includes delayed_probability and delayed."
+        ]
+    },
+    {
+        "query": "Is a 6 AM departure generally safer than a 9 PM departure for delays on ATL to MIA?",
+        "expected_answer": "Run predict_flight_delay twice for ATL->MIA at 0600 and 2100 and compare delayed_probability.",
+        "contexts": [
+            "Compare multiple scheduled_departure values to answer best time of day.",
+            "Use the same route and date for a fair comparison."
+        ]
+    },
+    {
+        "query": "What is the average delay minutes for JFK airport?",
+        "expected_answer": "Call get_airport_delay_stats for JFK and return avg_delay_minutes.",
+        "contexts": [
+            "get_airport_delay_stats returns avg_delay_minutes for the airport."
+        ]
+    },
+    {
+        "query": "Which airline has fewer delays: WN or AS?",
+        "expected_answer": "Use get_airline_delay_stats for WN and AS, then compare delay_rate.",
+        "contexts": [
+            "Lower delay_rate indicates fewer delays.",
+            "The tool returns airline name and delay_rate."
+        ]
+    },
+    {
+        "query": "Predict delay for AA from DFW to LAX on Feb 12 at 09:30.",
+        "expected_answer": "Use predict_flight_delay with airline=AA, origin=DFW, destination=LAX, month=2, day=12, scheduled_departure=930, and day_of_week.",
+        "contexts": [
+            "scheduled_departure uses HHMM format.",
+            "Return delayed_probability and delayed."
+        ]
+    },
+    {
+        "query": "Give route advice: is ATL->ORD more delay-prone than ATL->JFK?",
+        "expected_answer": "Use predict_flight_delay for both routes with the same date/time and compare delayed_probability.",
+        "contexts": [
+            "Compare delayed_probability across routes for the same schedule."
+        ]
+    },
+    {
+        "query": "What is the delay probability for UA from LAX to DEN on Nov 5 at 14:00?",
+        "expected_answer": "Use predict_flight_delay with airline=UA, origin=LAX, destination=DEN, month=11, day=5, scheduled_departure=1400, and day_of_week.",
+        "contexts": [
+            "The tool returns delayed_probability and delayed boolean."
+        ]
+    },
+    {
+        "query": "Is there historical evidence that ORD has high delays?",
+        "expected_answer": "Use get_airport_delay_stats for ORD and report delay_rate and avg_delay_minutes.",
+        "contexts": [
+            "get_airport_delay_stats returns historical delay_rate for the airport."
+        ]
+    },
+    {
+        "query": "What is the predicted delay for a morning flight from BOS to DCA on May 20?",
+        "expected_answer": "Use predict_flight_delay with origin=BOS, destination=DCA, month=5, day=20, day_of_week, and a morning scheduled_departure (e.g., 800).",
+        "contexts": [
+            "Morning scheduled_departure values are in the 500-1100 range.",
+            "Use predict_flight_delay for a specific time."
+        ]
+    },
+    {
+        "query": "Which airline has the highest average delay minutes among AA, DL, and UA?",
+        "expected_answer": "Call get_airline_delay_stats for AA, DL, and UA and compare avg_delay_minutes.",
+        "contexts": [
+            "avg_delay_minutes is part of get_airline_delay_stats output."
+        ]
+    },
+    {
+        "query": "Can you summarize what factors affect delay for this route?",
+        "expected_answer": "Use search_flight_knowledge to retrieve context and summarize key factors like congestion, time of day, and airline history.",
+        "contexts": [
+            "search_flight_knowledge retrieves relevant snippets from the knowledge base.",
+            "Provide a concise summary grounded in retrieved context."
+        ]
+    },
+    {
+        "query": "What is the delay probability for a weekend flight LAX to LAS on Aug 6 at 19:00?",
+        "expected_answer": "Use predict_flight_delay with origin=LAX, destination=LAS, month=8, day=6, day_of_week, and scheduled_departure=1900.",
+        "contexts": [
+            "Include day_of_week for weekend vs weekday differences.",
+            "Return delayed_probability and delayed fields."
+        ]
+    },
+    {
+        "query": "Compare delay risk for JFK->MIA at 07:00 vs 17:00.",
+        "expected_answer": "Run predict_flight_delay twice for JFK->MIA at 0700 and 1700 and compare delayed_probability.",
+        "contexts": [
+            "Use the same route and date for both predictions.",
+            "Compare delayed_probability values to decide which time is better."
+        ]
+    }
 ]
