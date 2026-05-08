@@ -32,6 +32,7 @@ jobs:
   deploy-staging:
     runs-on: ubuntu-latest
     needs: build
+    environment: staging
     steps:
       - uses: actions/checkout@v4
 
@@ -39,19 +40,24 @@ jobs:
         run: |
           docker build -f src/serving/Dockerfile -t datathon-serve:staging .
 
+      - name: Write staging env file from ENV_STAGING secret
+        run: echo "${{ secrets.ENV_STAGING }}" > .env.staging
+
       - name: Run serving container (staging)
         run: |
           docker rm -f datathon-serve-staging || true
           docker run -d --rm -p 8000:8000 \
+            --env-file .env.staging \
             -e MLFLOW_TRACKING_URI=http://localhost:5000 \
             --name datathon-serve-staging \
             datathon-serve:staging
 
-      - name: Smoke test /health
+      - name: Smoke test /health (staging)
         run: |
           curl --retry 10 --retry-connrefused --retry-delay 2 http://localhost:8000/health
 
-      - name: Stop staging container
+      - name: Stop staging container and remove staging env file
         if: always()
         run: |
           docker rm -f datathon-serve-staging || true
+          rm -f .env.staging

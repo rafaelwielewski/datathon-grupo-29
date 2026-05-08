@@ -95,11 +95,10 @@ def build_feature_store() -> Path:
     from feature_store.feature_store import flight_entity, flight_features_view
 
     fs.apply([flight_entity, flight_features_view])
-    min_ts = store_df['event_timestamp'].min()
     max_ts = store_df['event_timestamp'].max()
-    if min_ts is not None and max_ts is not None:
-        fs.materialize(min_ts, max_ts)
-        logger.info('Feature store materialized: %s -> %s', min_ts, max_ts)
+    if max_ts is not None:
+        fs.materialize_incremental(max_ts)
+        logger.info('Feature store incrementally materialized up to %s', max_ts)
     logger.info('Feature store registry updated')
 
     return OUT_PATH
