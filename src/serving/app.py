@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 import time
 import uuid
@@ -39,22 +38,20 @@ class LoggedRoute(APIRoute):
             start = time.perf_counter()
             ACTIVE_REQUESTS.inc()
             try:
-                try:
-                    body = await request.json()
-                    logger.info('%s %s | req: %s', request.method, request.url.path, body)
-                except Exception:
-                    logger.info('%s %s', request.method, request.url.path)
+                logger.info('%s %s | req_body=omitted', request.method, request.url.path)
 
                 response = await original(request)
                 elapsed = (time.perf_counter() - start) * 1000
 
-                try:
-                    resp_data = json.loads(bytes(response.body).decode())
-                    resp_log = resp_data.get('answer', resp_data) if isinstance(resp_data, dict) else resp_data
-                except Exception:
-                    resp_log = bytes(response.body).decode(errors='replace')
-
-                logger.info('%s %s %d (%.0fms) | resp: %s', request.method, request.url.path, response.status_code, elapsed, resp_log)
+                resp_len = len(response.body or b'')
+                logger.info(
+                    '%s %s %d (%.0fms) | resp_bytes=%d',
+                    request.method,
+                    request.url.path,
+                    response.status_code,
+                    elapsed,
+                    resp_len,
+                )
                 REQUEST_COUNT.labels(method=request.method, endpoint=request.url.path, status_code=str(response.status_code)).inc()
                 REQUEST_LATENCY.labels(method=request.method, endpoint=request.url.path).observe(elapsed / 1000)
             except BaseException as exc:
@@ -139,6 +136,24 @@ def query(request: QueryRequest) -> QueryResponse:
     delayed_label = 'delayed' if 'delayed: true' in safe_output.lower() or 'atrasado' in safe_output.lower() else 'on_time'
     FLIGHT_PREDICTION.labels(prediction=delayed_label).inc()
     return QueryResponse(answer=safe_output, intermediate_steps=safe_steps)
+
+
+@app.get('/predict-from-store/{flight_id}')
+def predict_from_store(flight_id: int) -> dict:
+    from src.models.predictor import predict_from_feature_store
+
+    try:
+        result = predict_from_feature_store(flight_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    delayed_label = 'delayed' if result.delayed else 'on_time'
+    FLIGHT_PREDICTION.labels(prediction=delayed_label).inc()
+    return {
+        'flight_id': flight_id,
+        'delayed_probability': result.delayed_probability,
+        'delayed': result.delayed,
+        'threshold': result.threshold,
+    }
 
 
 @lru_cache(maxsize=1)
