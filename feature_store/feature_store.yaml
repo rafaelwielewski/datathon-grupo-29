@@ -1,0 +1,6 @@
+project: datathon_grupo_29
+registry: data/feature_store/registry.db
+provider: local
+online_store:
+  type: sqlite
+  path: data/feature_store/online_store.db
