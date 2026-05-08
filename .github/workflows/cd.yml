@@ -1,0 +1,50 @@
+# .github/workflows/cd.yml
+name: Datathon CD
+
+on:
+  push:
+    branches:
+      - main
+    paths: ['src/**', 'tests/**', 'evaluation/**']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build training image
+        run: |
+          docker build -f Dockerfile.train -t datathon-train:prod .
+
+      - name: Build serving image
+        run: |
+          docker build -f src/serving/Dockerfile -t datathon-serve:prod .
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build serving image (staging)
+        run: |
+          docker build -f src/serving/Dockerfile -t datathon-serve:staging .
+
+      - name: Run serving container (staging)
+        run: |
+          docker rm -f datathon-serve-staging || true
+          docker run -d --rm -p 8000:8000 \
+            -e MLFLOW_TRACKING_URI=http://localhost:5000 \
+            --name datathon-serve-staging \
+            datathon-serve:staging
+
+      - name: Smoke test /health
+        run: |
+          curl --retry 10 --retry-connrefused --retry-delay 2 http://localhost:8000/health
+
+      - name: Stop staging container
+        if: always()
+        run: |
+          docker rm -f datathon-serve-staging || true
