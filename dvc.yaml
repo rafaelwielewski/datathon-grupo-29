@@ -1,4 +1,18 @@
 stages:
+  feature_store:
+    cmd: python scripts/build_feature_store.py
+    deps:
+      - data/raw/flights.csv
+      - data/raw/airlines.csv
+      - data/raw/airports.csv
+      - scripts/build_feature_store.py
+      - src/features/feature_engineering.py
+      - feature_store/feature_store.py
+      - feature_store/feature_store.yaml
+    outs:
+      - data/processed/feature_store/flight_features.parquet
+      - data/feature_store/registry.db
+      - data/feature_store/online_store.db
   train:
     cmd: python src/models/train.py
     deps:

@@ -6,6 +6,7 @@ import math
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -55,6 +56,85 @@ class PredictionResult:
     delayed_probability: float
     delayed: bool
     threshold: float
+
+
+_FEATURE_STORE_FEATURES = [
+    'flight_features:YEAR',
+    'flight_features:MONTH',
+    'flight_features:DAY',
+    'flight_features:DAY_OF_WEEK',
+    'flight_features:sched_dep_hour',
+    'flight_features:sched_dep_minute',
+    'flight_features:sched_arr_hour',
+    'flight_features:sched_arr_minute',
+    'flight_features:DISTANCE',
+    'flight_features:SCHEDULED_TIME',
+    'flight_features:is_weekend',
+    'flight_features:distance_bucket',
+    'flight_features:AIRLINE',
+    'flight_features:ORIGIN_AIRPORT',
+    'flight_features:DESTINATION_AIRPORT',
+    'flight_features:ROUTE',
+]
+
+
+def _normalize_feature_key(key: str) -> str:
+    if ':' in key:
+        return key.split(':')[-1]
+    if '__' in key:
+        return key.split('__')[-1]
+    return key
+
+
+def _flatten_feature_store_result(result: dict) -> dict:
+    flattened: dict[str, object] = {}
+    for key, values in result.items():
+        if key == 'flight_id':
+            continue
+        name = _normalize_feature_key(key)
+        if isinstance(values, list):
+            flattened[name] = values[0] if values else None
+        else:
+            flattened[name] = values
+    return flattened
+
+
+def _params_from_feature_store(features: dict) -> FlightParams:
+    required = [
+        'YEAR',
+        'MONTH',
+        'DAY',
+        'DAY_OF_WEEK',
+        'sched_dep_hour',
+        'sched_dep_minute',
+        'sched_arr_hour',
+        'sched_arr_minute',
+        'DISTANCE',
+        'SCHEDULED_TIME',
+        'AIRLINE',
+        'ORIGIN_AIRPORT',
+        'DESTINATION_AIRPORT',
+    ]
+    missing = [k for k in required if features.get(k) is None]
+    if missing:
+        raise ValueError(f'Missing required features from store: {missing}')
+
+    dep = int(features['sched_dep_hour']) * 100 + int(features['sched_dep_minute'])
+    arr = int(features['sched_arr_hour']) * 100 + int(features['sched_arr_minute'])
+
+    return FlightParams(
+        airline=str(features['AIRLINE']),
+        origin=str(features['ORIGIN_AIRPORT']),
+        destination=str(features['DESTINATION_AIRPORT']),
+        month=int(features['MONTH']),
+        day=int(features['DAY']),
+        day_of_week=int(features['DAY_OF_WEEK']),
+        scheduled_departure=dep,
+        scheduled_arrival=arr,
+        distance=float(features['DISTANCE']),
+        scheduled_time=float(features['SCHEDULED_TIME']),
+        year=int(features['YEAR']),
+    )
 
 
 def _period(hour: int) -> str:
@@ -267,6 +347,31 @@ def run_prediction(feature_df: pd.DataFrame) -> tuple[float, float]:
         proba = float(calibrator.predict_proba([[proba]])[:, 1][0])
 
     return proba, threshold
+
+
+_feast_store: Any = None
+
+
+def _get_feast_store() -> Any:
+    global _feast_store
+    if _feast_store is None:
+        from feast import FeatureStore
+
+        _feast_store = FeatureStore(repo_path='feature_store')
+    return _feast_store
+
+
+def predict_from_feature_store(flight_id: int) -> PredictionResult:
+    """Predict using features loaded from the Feast online store."""
+    fs = _get_feast_store()
+    store_result = fs.get_online_features(
+        features=_FEATURE_STORE_FEATURES,
+        entity_rows=[{'flight_id': int(flight_id)}],
+    ).to_dict()
+    features = _flatten_feature_store_result(store_result)
+    params = _params_from_feature_store(features)
+    logger.info('Predict from feature store | flight_id=%s', flight_id)
+    return predict(params)
 
 
 def predict(params: FlightParams) -> PredictionResult:

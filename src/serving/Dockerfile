@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -15,6 +15,8 @@ RUN pip install --no-cache-dir --default-timeout=100 --retries=10 .
 COPY src/ ./src/
 COPY configs/ ./configs/
 COPY data/processed/artifacts/ ./data/processed/artifacts/
+COPY feature_store/ ./feature_store/
+COPY data/feature_store/ ./data/feature_store/
 COPY .env ./
 
 EXPOSE 8000
