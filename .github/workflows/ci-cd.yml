@@ -64,6 +64,9 @@ jobs:
       - name: Write .env from ENV_STAGING secret (staging only)
         run: echo "${{ secrets.ENV_STAGING }}" > .env
 
+      - name: Create feature store directory (populated at runtime via DVC)
+        run: mkdir -p data/feature_store
+
       - name: Build serving image (staging)
         run: docker build -f src/serving/Dockerfile -t datathon-serve:staging .
 
