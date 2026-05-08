@@ -5,7 +5,14 @@ on:
   push:
     branches:
       - main
-    paths: ['src/**', 'tests/**', 'evaluation/**']
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'evaluation/**'
+      - 'feature_store/**'
+      - 'scripts/**'
+      - 'Dockerfile.train'
+      - 'src/serving/Dockerfile'
   workflow_dispatch:
 
 jobs:

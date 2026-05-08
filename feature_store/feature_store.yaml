@@ -1,6 +1,7 @@
 project: datathon_grupo_29
-registry: data/feature_store/registry.db
+registry: ../data/feature_store/registry.db
 provider: local
+entity_key_serialization_version: 3
 online_store:
   type: sqlite
-  path: data/feature_store/online_store.db
+  path: ../data/feature_store/online_store.db

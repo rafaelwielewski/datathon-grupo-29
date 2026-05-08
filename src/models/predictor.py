@@ -6,6 +6,7 @@ import math
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -348,11 +349,21 @@ def run_prediction(feature_df: pd.DataFrame) -> tuple[float, float]:
     return proba, threshold
 
 
+_feast_store: Any = None
+
+
+def _get_feast_store() -> Any:
+    global _feast_store
+    if _feast_store is None:
+        from feast import FeatureStore
+
+        _feast_store = FeatureStore(repo_path='feature_store')
+    return _feast_store
+
+
 def predict_from_feature_store(flight_id: int) -> PredictionResult:
     """Predict using features loaded from the Feast online store."""
-    from feast import FeatureStore
-
-    fs = FeatureStore(repo_path='feature_store')
+    fs = _get_feast_store()
     store_result = fs.get_online_features(
         features=_FEATURE_STORE_FEATURES,
         entity_rows=[{'flight_id': int(flight_id)}],

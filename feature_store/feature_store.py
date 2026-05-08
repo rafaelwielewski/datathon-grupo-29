@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from feast import Entity, FeatureView, Field, FileSource
 from feast.types import Float32, Int64, String
 
+_PROJECT_ROOT = Path(__file__).parent.parent
+
 flight_feature_source = FileSource(
-    path='data/processed/feature_store/flight_features.parquet',
+    path=str(_PROJECT_ROOT / 'data/processed/feature_store/flight_features.parquet'),
     event_timestamp_column='event_timestamp',
 )
 

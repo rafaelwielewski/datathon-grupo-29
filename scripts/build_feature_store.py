@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -16,9 +17,15 @@ OUT_DIR = DATA_DIR / 'processed' / 'feature_store'
 OUT_PATH = OUT_DIR / 'flight_features.parquet'
 REGISTRY_DIR = DATA_DIR / 'feature_store'
 
+# Set FEATURE_STORE_MAX_ROWS=0 (or unset) to use full dataset
+_MAX_ROWS = int(os.environ.get('FEATURE_STORE_MAX_ROWS', '50000'))
+
 
 def _load_raw_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    flights = pd.read_csv(RAW_DIR / 'flights.csv', low_memory=False)
+    nrows = _MAX_ROWS if _MAX_ROWS > 0 else None
+    if nrows:
+        logger.info('Loading %d rows (set FEATURE_STORE_MAX_ROWS=0 for full dataset)', nrows)
+    flights = pd.read_csv(RAW_DIR / 'flights.csv', low_memory=False, nrows=nrows)
     airlines = pd.read_csv(RAW_DIR / 'airlines.csv')
     airports = pd.read_csv(RAW_DIR / 'airports.csv')
     return flights, airlines, airports
@@ -54,7 +61,23 @@ def _build_feature_rows(df: pd.DataFrame) -> pd.DataFrame:
         'DESTINATION_AIRPORT',
         'ROUTE',
     ]
-    return df[keep_cols]
+    out = df[keep_cols].copy()
+    int64_cols = [
+        'YEAR',
+        'MONTH',
+        'DAY',
+        'DAY_OF_WEEK',
+        'sched_dep_hour',
+        'sched_dep_minute',
+        'sched_arr_hour',
+        'sched_arr_minute',
+        'is_weekend',
+    ]
+    for col in int64_cols:
+        out[col] = out[col].astype('int64')
+    out['DISTANCE'] = out['DISTANCE'].astype('float32')
+    out['SCHEDULED_TIME'] = out['SCHEDULED_TIME'].astype('float32')
+    return out
 
 
 def build_feature_store() -> Path:

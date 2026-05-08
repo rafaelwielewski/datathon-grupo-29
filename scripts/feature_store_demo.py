@@ -3,33 +3,15 @@ from __future__ import annotations
 import json
 import logging
 
-from feast import FeatureStore
+from src.models.predictor import _FEATURE_STORE_FEATURES, _get_feast_store
 
 logger = logging.getLogger(__name__)
 
 
 def demo_read_online(flight_id: int = 0) -> dict:
-    fs = FeatureStore(repo_path='feature_store')
-    features = [
-        'flight_features:YEAR',
-        'flight_features:MONTH',
-        'flight_features:DAY',
-        'flight_features:DAY_OF_WEEK',
-        'flight_features:sched_dep_hour',
-        'flight_features:sched_dep_minute',
-        'flight_features:sched_arr_hour',
-        'flight_features:sched_arr_minute',
-        'flight_features:DISTANCE',
-        'flight_features:SCHEDULED_TIME',
-        'flight_features:is_weekend',
-        'flight_features:distance_bucket',
-        'flight_features:AIRLINE',
-        'flight_features:ORIGIN_AIRPORT',
-        'flight_features:DESTINATION_AIRPORT',
-        'flight_features:ROUTE',
-    ]
+    fs = _get_feast_store()
     result = fs.get_online_features(
-        features=features,
+        features=_FEATURE_STORE_FEATURES,
         entity_rows=[{'flight_id': int(flight_id)}],
     ).to_dict()
     logger.info('Online features for flight_id=%s loaded', flight_id)

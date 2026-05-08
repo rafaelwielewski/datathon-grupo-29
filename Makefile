@@ -24,11 +24,11 @@ train:
 # Build Feast feature store artifacts and registry
 feature-store:
 	@echo "Building feature store (Feast)..."
-	python scripts/build_feature_store.py
+	PYTHONPATH=. python scripts/build_feature_store.py
 
 # Demo online feature retrieval
 feature-store-demo:
-	@python scripts/feature_store_demo.py
+	@PYTHONPATH=. python scripts/feature_store_demo.py
 
 # Start FastAPI serving endpoint locally on port 8000
 serve:

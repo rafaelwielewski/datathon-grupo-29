@@ -35,7 +35,7 @@ class InputGuardrail:
         r'\[INST\]',
         r'<</SYS>>',
         r'###\s*(instruction|system|human|assistant)\s*:',
-        r'system\s*:',
+        r'\bsystem\s*:',
         r'developer\s+message:\s*',
         r'tool\s+call:\s*',
         r'<tool_call>',

@@ -12,6 +12,7 @@ stages:
     outs:
       - data/processed/feature_store/flight_features.parquet
       - data/feature_store/registry.db
+      - data/feature_store/online_store.db
   train:
     cmd: python src/models/train.py
     deps:

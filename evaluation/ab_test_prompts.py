@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -73,11 +74,12 @@ def run_ab_test(
 
     for item in golden_set:
         question = item['query']
+        contexts = item.get('contexts', [])
         ans_a = _generate_answer(llm, prompt_a.system_prompt, question)
         ans_b = _generate_answer(llm, prompt_b.system_prompt, question)
 
-        score_a = judge_answer(question, ans_a, contexts=[], llm=judge_llm)
-        score_b = judge_answer(question, ans_b, contexts=[], llm=judge_llm)
+        score_a = judge_answer(question, ans_a, contexts=contexts, llm=judge_llm)
+        score_b = judge_answer(question, ans_b, contexts=contexts, llm=judge_llm)
         scores_a.append(score_a)
         scores_b.append(score_b)
 
@@ -92,7 +94,7 @@ def run_ab_test(
     avg_a = _avg(scores_a)
     avg_b = _avg(scores_b)
 
-    def _overall(avg: dict[str, float]) -> float:
+    def _overall(avg: Mapping[str, float]) -> float:
         return (avg['relevance'] + avg['faithfulness'] + avg['aviation_utility']) / 3
 
     overall_a = _overall(avg_a)
