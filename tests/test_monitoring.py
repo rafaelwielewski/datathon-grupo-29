@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 
 def test_prometheus_metrics_are_defined():
     from src.monitoring.metrics import (
@@ -177,3 +179,20 @@ def test_drift_endpoint_returns_result():
     data = response.json()
     assert 'drift_detected' in data
     assert 'drift_share' in data
+
+
+def test_request_id_filter_injects_request_id():
+    from src.serving.logging_config import RequestIDFilter
+
+    f = RequestIDFilter()
+    record = logging.LogRecord('test', logging.INFO, '', 0, 'msg', (), None)
+    assert f.filter(record) is True
+    assert hasattr(record, 'request_id')
+
+
+def test_configure_logging_sets_handler():
+    from src.serving.logging_config import configure_logging
+
+    configure_logging()
+    assert len(logging.root.handlers) >= 1
+    assert any(isinstance(h, logging.StreamHandler) for h in logging.root.handlers)

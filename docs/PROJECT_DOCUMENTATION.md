@@ -17,6 +17,13 @@ O projeto visa prever atrasos de voos domesticos nos EUA (>= 15 minutos) e dispo
 - Engenharia de atributos: tempo, rota, sazonalidade, congestao, estatisticas rolling.
 - Split temporal: treino (meses 1-8), validacao (9-10), teste (11-12).
 
+## 4.1 Feature management
+- Feature store com Feast (offline + online sqlite).
+- Offline: parquet em data/processed/feature_store/ (gerado por scripts/build_feature_store.py).
+- Online: materializacao via Feast em data/feature_store/online_store.db.
+- Definicoes em feature_store/feature_store.py e feature_store/feature_store.yaml.
+- Para inferencia tradicional, features historicas ausentes sao preenchidas com TRAIN_PRIOR.
+
 ## 5. Modelo
 - Algoritmo: CatBoostClassifier.
 - Calibracao: Platt (LogisticRegression).
@@ -24,7 +31,8 @@ O projeto visa prever atrasos de voos domesticos nos EUA (>= 15 minutos) e dispo
 - Artefatos: catboost_model.cbm, platt_calibrator.joblib, best_threshold.txt, metadata.json, metrics.json, stats por aeroporto/companhia.
 
 ## 6. Serving / API
-- FastAPI com endpoint /query.
+- FastAPI com endpoints /query e /predict-from-store/{flight_id}.
+- /predict-from-store consulta o Feast online store e roda inferencia.
 - Entrada validada por InputGuardrail.
 - Saida sanitizada por OutputGuardrail.
 - Observabilidade via Prometheus.

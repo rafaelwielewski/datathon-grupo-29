@@ -1,9 +1,10 @@
-.PHONY: install setup data train test lint format type-check security pre-commit serve clean \
-        dvc-train docker-build docker-train docker-serve mlflow-ui
+.PHONY: install setup data train feature-store feature-store-demo test lint format type-check security pre-commit serve clean \
+	dvc-train docker-build docker-train docker-serve mlflow-ui
 
 # First project setup - install dependencies and create folder structure
+
 setup: install
-	@mkdir -p data/raw data/processed data/golden_set data/processed/artifacts
+	@mkdir -p data/raw data/processed data/golden_set data/processed/artifacts data/processed/feature_store data/feature_store
 	@echo "Setup complete! Run 'make data' then 'make train'."
 
 # Generate serving artifacts and local sample dataset (no full training required)
@@ -19,6 +20,15 @@ install:
 train:
 	@echo "Training CatBoost flight delay model..."
 	python src/models/train.py
+
+# Build Feast feature store artifacts and registry
+feature-store:
+	@echo "Building feature store (Feast)..."
+	PYTHONPATH=. python scripts/build_feature_store.py
+
+# Demo online feature retrieval
+feature-store-demo:
+	@PYTHONPATH=. python scripts/feature_store_demo.py
 
 # Start FastAPI serving endpoint locally on port 8000
 serve:

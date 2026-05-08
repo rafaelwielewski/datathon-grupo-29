@@ -1,0 +1,49 @@
+groups:
+  - name: flight-delay-assistant
+    rules:
+      - alert: HighLatencyP99
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(api_request_latency_seconds_bucket[5m])) by (le)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High p99 latency detected"
+          description: "p99 latency is {{ $value | humanizeDuration }} (threshold: 2s)"
+
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(api_requests_total{status_code=~"5.."}[5m]))
+            /
+            sum(rate(api_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High 5xx error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      - alert: ModelDriftDetected
+        # Metric: datathon_drift_share (gauge) — emitted by the predictor when
+        # PSI-based drift detection runs. If the metric does not exist yet,
+        # this rule will stay inactive (no series = no firing).
+        expr: datathon_drift_share > 0.2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Model drift detected"
+          description: "drift_share is {{ $value }} (threshold: 0.2)"
+
+      - alert: ServiceDown
+        expr: up{job="flight-delay-assistant"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "flight-delay-assistant is down"
+          description: "Target {{ $labels.instance }} has been unreachable for 1 minute"

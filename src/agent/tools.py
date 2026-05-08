@@ -74,8 +74,4 @@ def get_airline_delay_stats(airline_code: str = 'AA') -> str:
 
 
 def get_all_tools() -> list:
-    from src.agent.rag_pipeline import build_rag_tool
-
-    cfg = _load_config()
-    rag_tool = build_rag_tool(cfg)
-    return [predict_flight_delay, get_airport_delay_stats, get_airline_delay_stats, rag_tool]
+    return [predict_flight_delay, get_airport_delay_stats, get_airline_delay_stats]

@@ -11,6 +11,7 @@
 - API: FastAPI em `src/serving/app.py`.
 - Agente: ReAct + 4 tools (predict_flight_delay, get_airport_delay_stats, get_airline_delay_stats, search_flight_knowledge).
 - Modelo: CatBoost + calibração Platt, artefatos em `data/processed/artifacts/`.
+- Feature Store: Feast (offline parquet + online sqlite) com materializacao via `scripts/build_feature_store.py`.
 - RAG: FAISS + embeddings locais (knowledge base em `data/knowledge_base` e `docs`).
 - Monitoramento: Prometheus + Evidently (drift).
 
@@ -36,5 +37,9 @@
 - Suporte informativo a decisões de viagem aérea doméstica nos EUA.
 - Não usar para decisões operacionais críticas ou planejamento de frota.
 
-## 8. Contato
+## 8. Endpoints
+- `/query`: agente ReAct com RAG.
+- `/predict-from-store/{flight_id}`: predição usando features do Feast online store.
+
+## 9. Contato
 - Grupo 29 (FIAP) — responsáveis pela demonstração.
